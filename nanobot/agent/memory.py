@@ -12,6 +12,8 @@ from loguru import logger
 from nanobot.utils.helpers import ensure_dir
 
 if TYPE_CHECKING:
+    from nanobot.agent.mem0_memory import Mem0Store
+    from nanobot.config.schema import Mem0Config
     from nanobot.providers.base import LLMProvider
     from nanobot.session.manager import Session
 
@@ -64,10 +66,24 @@ _ENTRY_SPLIT_RE = re.compile(r"\n\n(?=\[[\d]{4}-)")
 class MemoryStore:
     """Two-layer memory: MEMORY.md (long-term facts) + HISTORY.md (grep-searchable log)."""
 
-    def __init__(self, workspace: Path):
+    def __init__(self, workspace: Path, mem0_config: Mem0Config | None = None):
         self.memory_dir = ensure_dir(workspace / "memory")
         self.memory_file = self.memory_dir / "MEMORY.md"
         self.history_file = self.memory_dir / "HISTORY.md"
+        self._mem0: Mem0Store | None = None
+
+        if mem0_config and mem0_config.enabled:
+            try:
+                from nanobot.agent.mem0_memory import Mem0Store
+
+                self._mem0 = Mem0Store(
+                    ollama_url=mem0_config.ollama_url,
+                    embedding_model=mem0_config.embedding_model,
+                    llm_model=mem0_config.llm_model,
+                )
+            except Exception as exc:
+                logger.warning("Failed to enable mem0 semantic memory: {}", exc)
+                self._mem0 = None
 
     def read_long_term(self) -> str:
         if self.memory_file.exists():
@@ -132,7 +148,15 @@ class MemoryStore:
             recalled = self.recall(query)
             if recalled:
                 parts.append(f"## Recalled History\n{recalled}")
+            if self._mem0 is not None:
+                semantic = self._mem0.search(query)
+                if semantic:
+                    parts.append(f"## Semantic Memory\n{semantic}")
         return "\n\n".join(parts)
+
+    def save_to_mem0(self, text: str) -> None:
+        if self._mem0 is not None:
+            self._mem0.add(text)
 
     async def consolidate(
         self,

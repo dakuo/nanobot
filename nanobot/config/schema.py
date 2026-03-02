@@ -323,6 +323,21 @@ class ToolsConfig(Base):
     mcp_servers: dict[str, MCPServerConfig] = Field(default_factory=dict)
 
 
+class Mem0Config(Base):
+    """Optional mem0 semantic memory configuration."""
+
+    enabled: bool = False
+    ollama_url: str = "http://localhost:11434"  # Ollama server URL
+    embedding_model: str = "nomic-embed-text"  # Ollama embedding model
+    llm_model: str = "llama3.2"  # Ollama LLM model for memory extraction
+
+
+class MemoryConfig(Base):
+    """Memory system configuration."""
+
+    mem0: Mem0Config = Field(default_factory=Mem0Config)
+
+
 class Config(BaseSettings):
     """Root configuration for nanobot."""
 
@@ -331,6 +346,7 @@ class Config(BaseSettings):
     providers: ProvidersConfig = Field(default_factory=ProvidersConfig)
     gateway: GatewayConfig = Field(default_factory=GatewayConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
+    memory: MemoryConfig = Field(default_factory=MemoryConfig)
 
     @property
     def workspace_path(self) -> Path:

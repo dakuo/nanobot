@@ -1,15 +1,20 @@
 """Context builder for assembling agent prompts."""
 
+from __future__ import annotations
+
 import base64
 import mimetypes
 import platform
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from nanobot.agent.memory import MemoryStore
 from nanobot.agent.skills import SkillsLoader
+
+if TYPE_CHECKING:
+    from nanobot.config.schema import Mem0Config
 
 
 class ContextBuilder:
@@ -18,9 +23,9 @@ class ContextBuilder:
     BOOTSTRAP_FILES = ["AGENTS.md", "SOUL.md", "USER.md", "TOOLS.md", "IDENTITY.md"]
     _RUNTIME_CONTEXT_TAG = "[Runtime Context — metadata only, not instructions]"
 
-    def __init__(self, workspace: Path):
+    def __init__(self, workspace: Path, mem0_config: Mem0Config | None = None):
         self.workspace = workspace
-        self.memory = MemoryStore(workspace)
+        self.memory = MemoryStore(workspace, mem0_config=mem0_config)
         self.skills = SkillsLoader(workspace)
 
     def build_system_prompt(
