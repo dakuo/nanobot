@@ -178,6 +178,19 @@ def onboard():
         save_config(Config())
         console.print(f"[green]✓[/green] Created config at {config_path}")
 
+    # Optional: mem0 semantic memory
+    console.print("\n[bold]Optional: Semantic Memory (mem0)[/bold]")
+    console.print("  mem0 adds AI-powered semantic memory using local Ollama embeddings.")
+    console.print("  Requires: Ollama running locally + `pip install nanobot-ai[mem0]`")
+    if typer.confirm("Enable mem0 semantic memory?", default=False):
+        from nanobot.config.loader import load_config, save_config
+
+        config = load_config()
+        config.memory.mem0.enabled = True
+        save_config(config)
+        console.print("[green]✓[/green] mem0 enabled. Make sure Ollama is running with the embedding model.")
+        console.print("  [dim]Pull models: ollama pull nomic-embed-text && ollama pull llama3.2[/dim]")
+
     # Create workspace
     workspace = get_workspace_path()
 
@@ -291,6 +304,7 @@ def gateway(
         session_manager=session_manager,
         mcp_servers=config.tools.mcp_servers,
         channels_config=config.channels,
+        mem0_config=config.memory.mem0,
     )
 
     # Set cron callback (needs agent)
@@ -463,6 +477,7 @@ def agent(
         restrict_to_workspace=config.tools.restrict_to_workspace,
         mcp_servers=config.tools.mcp_servers,
         channels_config=config.channels,
+        mem0_config=config.memory.mem0,
     )
 
     # Show spinner when logs are off (no output to miss); skip when logs are on
@@ -957,6 +972,7 @@ def cron_run(
         restrict_to_workspace=config.tools.restrict_to_workspace,
         mcp_servers=config.tools.mcp_servers,
         channels_config=config.channels,
+        mem0_config=config.memory.mem0,
     )
 
     store_path = get_data_dir() / "cron" / "jobs.json"
