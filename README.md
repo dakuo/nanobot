@@ -871,6 +871,83 @@ MCP tools are automatically discovered and registered on startup. The LLM can us
 
 
 
+### Memory & Self-Improvement
+
+nanobot has a layered memory system that works out of the box — no setup needed. Optional semantic memory adds AI-powered recall.
+
+| Layer | What it does | Always on? |
+|-------|-------------|-----------|
+| **MEMORY.md** | Long-term facts (preferences, project context). Loaded into every prompt. | ✅ Yes |
+| **HISTORY.md** | Append-only event log. Grep-searchable. | ✅ Yes |
+| **Auto-Recall** | Extracts keywords from your message and automatically retrieves relevant history entries. | ✅ Yes |
+| **Self-Improvement** | Logs errors, corrections, and knowledge gaps to `.learnings/`. Promotes recurring patterns to MEMORY.md. | ✅ Skill (load on demand) |
+| **Semantic Memory (mem0)** | AI-powered memory using local Ollama embeddings. Understands meaning, not just keywords. | ❌ Opt-in |
+
+#### Auto-Recall (built-in)
+
+Every message you send is automatically matched against past history. Relevant entries appear in the agent's context as "Recalled History" — no manual grep needed.
+
+#### Self-Improvement (built-in skill)
+
+The `self-improvement` skill teaches nanobot to learn from mistakes:
+- **Errors** → logged to `.learnings/ERRORS.md`
+- **User corrections** → logged to `.learnings/LEARNINGS.md`
+- **Feature requests** → logged to `.learnings/FEATURE_REQUESTS.md`
+- **Recurring patterns** (3+ times) → automatically promoted to `MEMORY.md`
+
+The `.learnings/` directory is created automatically during `nanobot onboard`.
+
+<details>
+<summary><b>Semantic Memory with mem0 (optional)</b></summary>
+
+mem0 adds AI-powered semantic memory using local Ollama embeddings. Unlike keyword matching, it understands meaning — "I like dark theme" will match queries about "color preferences".
+
+**Requirements:**
+- [Ollama](https://ollama.ai) running locally
+- Embedding + LLM models pulled
+
+**1. Install mem0 dependencies:**
+
+```bash
+pip install nanobot-ai[mem0]
+```
+
+**2. Pull Ollama models:**
+
+```bash
+ollama pull nomic-embed-text
+ollama pull llama3.2
+```
+
+**3. Enable during onboarding:**
+
+```bash
+nanobot onboard
+# Answer "y" when asked about mem0
+```
+
+**Or enable manually** in `~/.nanobot/config.json`:
+
+```json
+{
+  "memory": {
+    "mem0": {
+      "enabled": true,
+      "ollamaUrl": "http://localhost:11434",
+      "embeddingModel": "nomic-embed-text",
+      "llmModel": "llama3.2"
+    }
+  }
+}
+```
+
+When enabled, mem0 runs alongside the existing memory system:
+- User messages are automatically saved as semantic memories
+- Relevant memories are retrieved and shown as "Semantic Memory" in the agent's context
+- All data stays local (Ollama embeddings + local Qdrant at `~/.nanobot/mem0_store/`)
+
+</details>
+
 ### Security
 
 > [!TIP]
@@ -1041,7 +1118,7 @@ nanobot/
 │   ├── skills.py   #    Skills loader
 │   ├── subagent.py #    Background task execution
 │   └── tools/      #    Built-in tools (incl. spawn)
-├── skills/         # 🎯 Bundled skills (github, weather, tmux...)
+├── skills/         # 🎯 Bundled skills (github, self-improvement, weather...)
 ├── channels/       # 📱 Chat channel integrations
 ├── bus/            # 🚌 Message routing
 ├── cron/           # ⏰ Scheduled tasks
@@ -1059,10 +1136,10 @@ PRs welcome! The codebase is intentionally small and readable. 🤗
 **Roadmap** — Pick an item and [open a PR](https://github.com/HKUDS/nanobot/pulls)!
 
 - [ ] **Multi-modal** — See and hear (images, voice, video)
-- [ ] **Long-term memory** — Never forget important context
+- [x] **Long-term memory** — Auto-recall, semantic memory (mem0), and persistent context
 - [ ] **Better reasoning** — Multi-step planning and reflection
 - [ ] **More integrations** — Calendar and more
-- [ ] **Self-improvement** — Learn from feedback and mistakes
+- [x] **Self-improvement** — Learn from feedback and mistakes
 
 ### Contributors
 
