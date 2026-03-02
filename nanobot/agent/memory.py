@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -42,6 +43,24 @@ _SAVE_MEMORY_TOOL = [
 ]
 
 
+_STOP_WORDS = frozenset(
+    "a an the is are was were be been being have has had do does did will would shall "
+    "should can could may might must need to of in on at by for with from as into about "
+    "between through after before above below up down out off over under again then once "
+    "and but or nor not no so if when how what which who whom this that these those it "
+    "its he she they we you i me my your his her our their them him us am just also very "
+    "too much many more most some any all each every both few other another such than "
+    "here there where why because since while during only own same than please thanks "
+    "hi hello hey yes yeah ok okay sure right well oh hey know think get got like want "
+    "make let see use try tell say go come take look help find give work call ask try "
+    "really still even already yet always never sometimes anything something nothing "
+    "does don't didn't can't won't couldn't wouldn't shouldn't isn't aren't wasn't "
+    "haven't hasn't hadn't don doesn did wouldn couldn shouldn isn aren wasn".split()
+)
+
+_ENTRY_SPLIT_RE = re.compile(r"\n\n(?=\[[\d]{4}-)")
+
+
 class MemoryStore:
     """Two-layer memory: MEMORY.md (long-term facts) + HISTORY.md (grep-searchable log)."""
 
@@ -62,9 +81,58 @@ class MemoryStore:
         with open(self.history_file, "a", encoding="utf-8") as f:
             f.write(entry.rstrip() + "\n\n")
 
-    def get_memory_context(self) -> str:
+    @staticmethod
+    def _extract_keywords(text: str) -> list[str]:
+        """Extract meaningful keywords from text for history search."""
+        words = re.findall(r"[a-zA-Z0-9_.-]+", text.lower())
+        return [w for w in words if len(w) > 2 and w not in _STOP_WORDS]
+
+    def recall(self, query: str, max_entries: int = 5, max_chars: int = 1500) -> str:
+        """Search HISTORY.md for entries relevant to query. Returns matched entries."""
+        if not self.history_file.exists():
+            return ""
+        keywords = self._extract_keywords(query)
+        if not keywords:
+            return ""
+
+        raw = self.history_file.read_text(encoding="utf-8").strip()
+        if not raw:
+            return ""
+
+        entries = _ENTRY_SPLIT_RE.split(raw)
+        scored: list[tuple[int, str]] = []
+        for entry in entries:
+            entry = entry.strip()
+            if not entry:
+                continue
+            lower = entry.lower()
+            score = sum(1 for kw in keywords if kw in lower)
+            if score > 0:
+                scored.append((score, entry))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+
+        result_parts: list[str] = []
+        total = 0
+        for _, entry in scored[:max_entries]:
+            if total + len(entry) > max_chars:
+                break
+            result_parts.append(entry)
+            total += len(entry)
+
+        return "\n\n".join(result_parts)
+
+    def get_memory_context(self, query: str | None = None) -> str:
+        """Build memory context with long-term facts and optionally recalled history."""
+        parts: list[str] = []
         long_term = self.read_long_term()
-        return f"## Long-term Memory\n{long_term}" if long_term else ""
+        if long_term:
+            parts.append(f"## Long-term Memory\n{long_term}")
+        if query:
+            recalled = self.recall(query)
+            if recalled:
+                parts.append(f"## Recalled History\n{recalled}")
+        return "\n\n".join(parts)
 
     async def consolidate(
         self,
