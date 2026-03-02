@@ -60,6 +60,13 @@ def sync_workspace_templates(workspace: Path, silent: bool = False) -> list[str]
     _write(None, workspace / "memory" / "HISTORY.md")
     (workspace / "skills").mkdir(exist_ok=True)
 
+    # Self-improvement learnings directory
+    learnings_tpl = tpl / "learnings"
+    if learnings_tpl.is_dir():
+        for item in learnings_tpl.iterdir():
+            if item.name.endswith(".md"):
+                _write(item, workspace / ".learnings" / item.name)
+
     if added and not silent:
         from rich.console import Console
         for name in added:
