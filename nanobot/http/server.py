@@ -17,20 +17,37 @@ _CHAT_HTML = """<!DOCTYPE html>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a2e;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;height:100vh;display:flex;flex-direction:column}
+
+/* --- Token gate --- */
 #token-gate{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px}
 #token-gate input{padding:10px 16px;width:320px;border-radius:8px;border:1px solid #333;background:#16213e;color:#e0e0e0;font-size:14px}
 #token-gate button{padding:10px 24px;border-radius:8px;border:none;background:#0f3460;color:#e0e0e0;cursor:pointer;font-size:14px}
 #token-gate button:hover{background:#1a4a8a}
-#chat-container{display:none;flex-direction:column;height:100vh}
-#header{padding:10px 16px;background:#16213e;border-bottom:1px solid #333;font-size:13px;color:#888;display:flex;justify-content:space-between;align-items:center}
-#header .title{font-weight:600;color:#e0e0e0;font-size:15px}
-#header .session-id{font-size:11px;color:#666;max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* --- Main layout --- */
+#app{display:none;flex-direction:row;height:100vh;width:100%}
+
+/* --- Sidebar --- */
+#sidebar{width:260px;min-width:200px;background:#12122a;border-right:1px solid #2a2a4a;display:flex;flex-direction:column;overflow:hidden}
+#sidebar-header{padding:14px 16px;font-weight:600;font-size:15px;border-bottom:1px solid #2a2a4a;display:flex;justify-content:space-between;align-items:center}
+#sidebar-header .count{font-size:12px;color:#666;font-weight:400}
+#session-list{flex:1;overflow-y:auto;padding:6px 0}
+.session-item{padding:10px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .15s}
+.session-item:hover{background:#1a1a3a}
+.session-item.active{background:#0f3460;border-left-color:#4a9eff}
+.session-item .label{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-item .meta{font-size:11px;color:#666;margin-top:2px;display:flex;justify-content:space-between}
+.session-item .meta .msg-count{color:#4a9eff}
+
+/* --- Chat panel --- */
+#chat-panel{flex:1;display:flex;flex-direction:column;min-width:0}
+#chat-header{padding:10px 16px;background:#16213e;border-bottom:1px solid #333;font-size:13px;color:#888;display:flex;justify-content:space-between;align-items:center}
+#chat-header .title{font-weight:600;color:#e0e0e0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
-#messages:empty::after{content:'No messages yet. Start a conversation below.';color:#555;align-self:center;margin-top:40vh;font-size:14px}
+#empty-state{display:flex;align-items:center;justify-content:center;flex:1;color:#555;font-size:14px;text-align:center;padding:20px}
 .msg{max-width:80%;padding:10px 14px;border-radius:12px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;font-size:14px}
 .msg.user{align-self:flex-end;background:#0f3460;color:#e0e0e0}
 .msg.assistant{align-self:flex-start;background:#16213e;border:1px solid #2a2a4a;color:#e0e0e0}
-.msg.history{opacity:0.7}
 .loading{align-self:flex-start;color:#666;font-style:italic;padding:10px 14px;font-size:13px}
 #input-bar{display:flex;padding:12px;gap:8px;background:#16213e;border-top:1px solid #333}
 #input-bar input{flex:1;padding:10px 14px;border-radius:8px;border:1px solid #333;background:#1a1a2e;color:#e0e0e0;font-size:14px;outline:none}
@@ -42,58 +59,165 @@ body{background:#1a1a2e;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFo
 </style>
 </head>
 <body>
+
 <div id="token-gate">
   <div style="font-size:24px;font-weight:600">&#x1f408; nanobot</div>
   <div style="color:#888;font-size:13px;margin-bottom:8px">Enter your API token to connect</div>
   <input id="token-input" type="password" placeholder="Bearer token" onkeydown="if(event.key==='Enter')connectWithToken()">
   <button onclick="connectWithToken()">Connect</button>
+  <div id="gate-error" style="color:#ff6b6b;font-size:12px;display:none"></div>
 </div>
-<div id="chat-container">
-  <div id="header">
-    <span class="title">&#x1f408; nanobot</span>
-    <span class="session-id" id="session-label"></span>
+
+<div id="app">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <span>&#x1f408; nanobot</span>
+      <span class="count" id="total-count"></span>
+    </div>
+    <div id="session-list"></div>
   </div>
-  <div id="error-banner"></div>
-  <div id="messages"></div>
-  <div id="input-bar">
-    <input id="msg-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg()">
-    <button id="send-btn" onclick="sendMsg()">Send</button>
+  <div id="chat-panel">
+    <div id="chat-header">
+      <span class="title" id="chat-title">Select a session</span>
+    </div>
+    <div id="error-banner"></div>
+    <div id="empty-state">Select a session from the sidebar to view messages.</div>
+    <div id="messages" style="display:none"></div>
+    <div id="input-bar">
+      <input id="msg-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg()" disabled>
+      <button id="send-btn" onclick="sendMsg()" disabled>Send</button>
+    </div>
   </div>
 </div>
+
 <script>
 let TOKEN = '';
 let SESSION_KEY = '';
 const params = new URLSearchParams(location.search);
+const conversationMsgs = [];
 
-// Auto-connect if token is in URL
+// ---- Init ----
 (function init() {
   const urlToken = params.get('token');
   const urlSession = params.get('session');
   if (urlSession) SESSION_KEY = urlSession;
   if (urlToken) {
     TOKEN = urlToken;
-    showChat();
-    loadHistory();
+    enterApp();
   }
 })();
 
 function connectWithToken() {
   TOKEN = document.getElementById('token-input').value.trim();
   if (!TOKEN) return;
-  showChat();
-  loadHistory();
+  enterApp();
 }
 
-function showChat() {
-  document.getElementById('token-gate').style.display = 'none';
-  const c = document.getElementById('chat-container');
-  c.style.display = 'flex';
-  if (SESSION_KEY) {
-    document.getElementById('session-label').textContent = SESSION_KEY;
+async function enterApp() {
+  // Verify token works before showing app
+  try {
+    const r = await fetch('/api/sessions', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN }
+    });
+    if (r.status === 401) {
+      const ge = document.getElementById('gate-error');
+      ge.textContent = 'Invalid token';
+      ge.style.display = 'block';
+      return;
+    }
+  } catch (e) {
+    // If /api/sessions fails, still enter - might be older server
   }
+
+  document.getElementById('token-gate').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  await loadSessions();
+
+  if (SESSION_KEY) {
+    selectSession(SESSION_KEY);
+  }
+}
+
+// ---- Sidebar ----
+async function loadSessions() {
+  try {
+    const r = await fetch('/api/sessions', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN }
+    });
+    if (!r.ok) return;
+    const data = await r.json();
+    const sessions = data.sessions || [];
+    const list = document.getElementById('session-list');
+    list.innerHTML = '';
+
+    let totalMsgs = 0;
+    for (const s of sessions) {
+      totalMsgs += s.message_count || 0;
+      const div = document.createElement('div');
+      div.className = 'session-item' + (s.key === SESSION_KEY ? ' active' : '');
+      div.dataset.key = s.key;
+      div.onclick = function() { selectSession(s.key); };
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = s.key;
+      div.appendChild(label);
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const count = document.createElement('span');
+      count.className = 'msg-count';
+      count.textContent = (s.message_count || 0) + ' msgs';
+      const updated = document.createElement('span');
+      updated.textContent = s.updated_at ? new Date(s.updated_at).toLocaleDateString() : '';
+      meta.appendChild(count);
+      meta.appendChild(updated);
+      div.appendChild(meta);
+
+      list.appendChild(div);
+    }
+
+    document.getElementById('total-count').textContent =
+      sessions.length + ' sessions, ' + totalMsgs + ' msgs';
+  } catch (e) {
+    console.error('Failed to load sessions:', e);
+  }
+}
+
+async function selectSession(key) {
+  SESSION_KEY = key;
+  conversationMsgs.length = 0;
+
+  // Update sidebar active state
+  document.querySelectorAll('.session-item').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.key === key);
+  });
+
+  // Update URL without reload
+  const url = new URL(location);
+  url.searchParams.set('session', key);
+  if (TOKEN) url.searchParams.set('token', TOKEN);
+  history.replaceState(null, '', url);
+
+  // Update header
+  document.getElementById('chat-title').textContent = key;
+
+  // Show messages panel, hide empty state
+  document.getElementById('empty-state').style.display = 'none';
+  const msgDiv = document.getElementById('messages');
+  msgDiv.style.display = 'flex';
+  msgDiv.innerHTML = '';
+
+  // Enable input
+  document.getElementById('msg-input').disabled = false;
+  document.getElementById('send-btn').disabled = false;
+
+  // Load messages
+  await loadHistory();
   document.getElementById('msg-input').focus();
 }
 
+// ---- Messages ----
 function showError(msg) {
   const banner = document.getElementById('error-banner');
   banner.textContent = msg;
@@ -101,10 +225,10 @@ function showError(msg) {
   setTimeout(function() { banner.style.display = 'none'; }, 5000);
 }
 
-function renderMsg(role, content, isHistory) {
+function renderMsg(role, content) {
   const d = document.getElementById('messages');
   const el = document.createElement('div');
-  el.className = 'msg ' + role + (isHistory ? ' history' : '');
+  el.className = 'msg ' + role;
   el.textContent = content;
   d.appendChild(el);
   return el;
@@ -115,9 +239,6 @@ function scrollToBottom() {
   d.scrollTop = d.scrollHeight;
 }
 
-// Track only new messages for the completions API context
-const conversationMsgs = [];
-
 async function loadHistory() {
   if (!SESSION_KEY) return;
   try {
@@ -126,26 +247,34 @@ async function loadHistory() {
     });
     if (!r.ok) {
       if (r.status === 401) showError('Invalid token');
+      else showError('Failed to load session (HTTP ' + r.status + ')');
       return;
     }
     const data = await r.json();
     const messages = data.messages || [];
     for (const m of messages) {
-      renderMsg(m.role, m.content, true);
+      renderMsg(m.role, m.content);
+    }
+    if (messages.length === 0) {
+      const d = document.getElementById('messages');
+      const hint = document.createElement('div');
+      hint.style.cssText = 'color:#555;align-self:center;margin-top:20vh;font-size:14px';
+      hint.textContent = 'No messages in this session yet.';
+      d.appendChild(hint);
     }
     scrollToBottom();
   } catch (e) {
-    console.error('Failed to load history:', e);
+    showError('Failed to load history: ' + e.message);
   }
 }
 
 async function sendMsg() {
   const inp = document.getElementById('msg-input');
   const text = inp.value.trim();
-  if (!text) return;
+  if (!text || !SESSION_KEY) return;
   inp.value = '';
 
-  renderMsg('user', text, false);
+  renderMsg('user', text);
   conversationMsgs.push({ role: 'user', content: text });
   scrollToBottom();
 
@@ -153,7 +282,6 @@ async function sendMsg() {
   btn.disabled = true;
   inp.disabled = true;
 
-  // Show typing indicator
   const d = document.getElementById('messages');
   const loading = document.createElement('div');
   loading.className = 'loading';
@@ -164,11 +292,9 @@ async function sendMsg() {
   try {
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + TOKEN
+      'Authorization': 'Bearer ' + TOKEN,
+      'x-nanobot-session-key': SESSION_KEY
     };
-    if (SESSION_KEY) {
-      headers['x-nanobot-session-key'] = SESSION_KEY;
-    }
     const r = await fetch('/v1/chat/completions', {
       method: 'POST',
       headers: headers,
@@ -178,16 +304,16 @@ async function sendMsg() {
     const j = await r.json();
     if (j.error) {
       showError(j.error);
-      renderMsg('assistant', 'Error: ' + j.error, false);
+      renderMsg('assistant', 'Error: ' + j.error);
     } else {
       const c = j.choices[0].message.content;
       conversationMsgs.push({ role: 'assistant', content: c });
-      renderMsg('assistant', c, false);
+      renderMsg('assistant', c);
     }
   } catch (e) {
     loading.remove();
     showError('Request failed: ' + e.message);
-    renderMsg('assistant', 'Error: ' + e.message, false);
+    renderMsg('assistant', 'Error: ' + e.message);
   }
   scrollToBottom();
   btn.disabled = false;
@@ -200,6 +326,26 @@ async function sendMsg() {
 
 
 _NO_AUTH_ROUTES = {("GET", "/api/health"), ("GET", "/chat")}
+
+
+def _extract_visible_messages(session) -> list[dict]:
+    """Extract user/assistant messages from a session, filtering tool calls."""
+    messages = []
+    for m in session.messages:
+        role = m.get("role")
+        content = m.get("content", "")
+        if role not in ("user", "assistant") or not content:
+            continue
+        if role == "assistant" and m.get("tool_calls") and not content:
+            continue
+        if isinstance(content, list):
+            text_parts = [p.get("text", "") for p in content if p.get("type") == "text"]
+            content = "\n".join(t for t in text_parts if t)
+            if not content:
+                continue
+        if isinstance(content, str) and content.strip():
+            messages.append({"role": role, "content": content.strip()})
+    return messages
 
 
 class HTTPServer:
@@ -225,6 +371,24 @@ class HTTPServer:
     async def _health(self, _request: web.Request) -> web.Response:
         return web.json_response({"status": "ok", "port": self.port})
 
+    async def _list_sessions(self, _request: web.Request) -> web.Response:
+        """List all sessions with message counts."""
+        raw = self.agent.sessions.list_sessions()
+        sessions = []
+        for info in raw:
+            key = info.get("key", "")
+            session = self.agent.sessions.get_or_create(key)
+            visible = _extract_visible_messages(session)
+            sessions.append(
+                {
+                    "key": key,
+                    "message_count": len(visible),
+                    "updated_at": info.get("updated_at"),
+                    "created_at": info.get("created_at"),
+                }
+            )
+        return web.json_response({"sessions": sessions})
+
     async def _get_session(self, request: web.Request) -> web.Response:
         """Return message history for a session."""
         key = request.query.get("key", "")
@@ -232,24 +396,7 @@ class HTTPServer:
             return web.json_response({"error": "Missing 'key' parameter"}, status=400)
 
         session = self.agent.sessions.get_or_create(key)
-        messages = []
-        for m in session.messages:
-            role = m.get("role")
-            content = m.get("content", "")
-            if role not in ("user", "assistant") or not content:
-                continue
-            # Skip assistant messages that were just tool-call wrappers (no text)
-            if role == "assistant" and m.get("tool_calls") and not content:
-                continue
-            # Handle multimodal content (list of parts)
-            if isinstance(content, list):
-                text_parts = [p.get("text", "") for p in content if p.get("type") == "text"]
-                content = "\n".join(t for t in text_parts if t)
-                if not content:
-                    continue
-            if isinstance(content, str) and content.strip():
-                messages.append({"role": role, "content": content.strip()})
-
+        messages = _extract_visible_messages(session)
         return web.json_response({"key": key, "messages": messages})
 
     async def _chat_completions(self, request: web.Request) -> web.Response:
@@ -297,6 +444,7 @@ class HTTPServer:
     async def start(self) -> None:
         app = web.Application(middlewares=[self._auth_middleware])
         app.router.add_get("/api/health", self._health)
+        app.router.add_get("/api/sessions", self._list_sessions)
         app.router.add_get("/api/session", self._get_session)
         app.router.add_post("/v1/chat/completions", self._chat_completions)
         app.router.add_get("/chat", self._chat_page)
