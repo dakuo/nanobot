@@ -29,7 +29,9 @@ class ContextBuilder:
         self.skills = SkillsLoader(workspace)
 
     def build_system_prompt(
-        self, skill_names: list[str] | None = None, query: str | None = None,
+        self,
+        skill_names: list[str] | None = None,
+        query: str | None = None,
     ) -> str:
         """Build the system prompt from identity, bootstrap files, memory, and skills."""
         parts = [self._get_identity()]
@@ -122,15 +124,20 @@ Reply directly with text for conversations. Only use the 'message' tool to send 
         runtime_ctx = self._build_runtime_context(channel, chat_id)
         user_content = self._build_user_content(current_message, media)
 
+        # Merge runtime context and user content into a single user message
+        # to avoid consecutive same-role messages that some providers reject.
         if isinstance(user_content, str):
-            merged_content: str | list[dict[str, Any]] = f"{runtime_ctx}\n\n{user_content}"
+            merged = f"{runtime_ctx}\n\n{user_content}"
         else:
-            merged_content = [{"type": "text", "text": runtime_ctx}] + user_content
+            merged = [{"type": "text", "text": runtime_ctx}] + user_content
 
         return [
-            {"role": "system", "content": self.build_system_prompt(skill_names, query=current_message)},
+            {
+                "role": "system",
+                "content": self.build_system_prompt(skill_names, query=current_message),
+            },
             *history,
-            {"role": "user", "content": merged_content},
+            {"role": "user", "content": merged},
         ]
 
     def _build_user_content(self, text: str, media: list[str] | None) -> str | list[dict[str, Any]]:
@@ -152,15 +159,21 @@ Reply directly with text for conversations. Only use the 'message' tool to send 
         return images + [{"type": "text", "text": text}]
 
     def add_tool_result(
-        self, messages: list[dict[str, Any]],
-        tool_call_id: str, tool_name: str, result: str,
+        self,
+        messages: list[dict[str, Any]],
+        tool_call_id: str,
+        tool_name: str,
+        result: str,
     ) -> list[dict[str, Any]]:
         """Add a tool result to the message list."""
-        messages.append({"role": "tool", "tool_call_id": tool_call_id, "name": tool_name, "content": result})
+        messages.append(
+            {"role": "tool", "tool_call_id": tool_call_id, "name": tool_name, "content": result}
+        )
         return messages
 
     def add_assistant_message(
-        self, messages: list[dict[str, Any]],
+        self,
+        messages: list[dict[str, Any]],
         content: str | None,
         tool_calls: list[dict[str, Any]] | None = None,
         reasoning_content: str | None = None,
