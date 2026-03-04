@@ -61,22 +61,28 @@ After evaluating AutoGen, LangGraph, CrewAI, FARS, OpenFARS, AI-Scientist v1, an
                                │
         ┌──────────────────────┼──────────────────────┐
         │                      │                      │
-   Phase 2              Phase 3              Phase 4 (PARALLEL)
-┌──────────────┐   ┌──────────────┐   ┌──────────────────────────┐
-│ r01-ideation │   │r01-literature│   │ r01-writer-hci           │
-│              │   │              │   │ r01-writer-healthcare    │ ← simultaneous
-│ Tree-search  │   │ PubMed +     │   │ r01-writer-ai            │
-│ hypotheses   │   │ Semantic     │   │ r01-writer-integrator    │
-└──────────────┘   │ Scholar      │   └──────────────────────────┘
-                   └──────────────┘              │
-                                                 │ merge
-                                          ┌──────┴──────┐
-                                   Phase 6│ r01-figures  │
-                                          └──────┬──────┘
-                                          Phase 6│ r01-budget  │
-                                          └──────┬──────┘
-                                                 │
-                                    Phase 7 (PARALLEL)
+   Phase 2            Phase 3 (PARALLEL)       Phase 4
+┌──────────────┐   ┌──────────────────────┐  ┌──────────────┐
+│ r01-ideation │   │ r01-literature ×3    │  │r01-writer-   │
+│              │   │  (hci, healthcare,   │  │ integrator   │
+│ Tree-search  │   │   ai) → merge/dedup  │  │ (outline)    │
+│ hypotheses   │   └──────────────────────┘  └──────────────┘
+└──────────────┘              │                      │
+                              │               Phase 5 (PARALLEL)
+                              │         ┌──────────────────────────┐
+                              │         │ r01-writer-hci           │
+                              │         │ r01-writer-healthcare    │ ← simultaneous
+                              │         │ r01-writer-ai            │
+                              │         │ r01-writer-integrator    │
+                              │         └──────────────────────────┘
+                              │                    │ merge
+                                           ┌──────┴──────┐
+                                    Phase 6│ r01-figures  │
+                                           └──────┬──────┘
+                                           Phase 6│ r01-budget  │
+                                           └──────┬──────┘
+                                                  │
+                                     Phase 7 (PARALLEL)
                               ┌──────────────────────────┐
                               │ r01-reviewer-hci         │
                               │ r01-reviewer-healthcare  │ ← simultaneous
@@ -96,9 +102,9 @@ After evaluating AutoGen, LangGraph, CrewAI, FARS, OpenFARS, AI-Scientist v1, an
 |-------|------|----------|-----------|
 | 1 | init | orchestrator | No |
 | 2 | ideation | r01-ideation | No |
-| 3 | literature | r01-literature | No |
-| 4 | writing | r01-writer-{hci,healthcare,ai,integrator} | **Yes — all writers simultaneous** |
-| 5 | outline_review | orchestrator (user checkpoint) | No |
+| 3 | literature | r01-literature × 3 (hci, healthcare, ai) → merge | **Yes — 3 domain searches simultaneous** |
+| 4 | outline | r01-writer-integrator | No |
+| 5 | writing | r01-writer-{hci,healthcare,ai,integrator} | **Yes — all writers simultaneous** |
 | 6 | figures + budget | r01-figures, r01-budget | Yes |
 | 7 | review | r01-reviewer-{hci,healthcare,ai} → r01-reviewer-panel | **Yes — 3 reviewers simultaneous, then panel** |
 | 8 | revision | r01-reviser | No |
@@ -121,44 +127,47 @@ Detailed specs in `skills/r01-orchestrator/references/pipeline.md` (264 lines) a
 
 ## 3. Directory Structure
 
-### 3.1 In This Repository (`r01-proposal/`)
+### 3.1 In This Repository
+
+> **Note**: Skills have been moved from `r01-proposal/skills/` to `nanobot/skills/` as built-in skills for easier distribution via `pip install`.
 
 ```
 r01-proposal/
 ├── PLAN.md                          ← THIS FILE (project plan + status)
 ├── README.md                        ← Setup and installation instructions
-├── skills/                          ← All 14 agent skills (copy to ~/.nanobot/workspace/skills/)
-│   ├── r01-orchestrator/
-│   │   ├── SKILL.md                 (72 lines — state machine, parallel dispatch)
-│   │   └── references/
-│   │       ├── pipeline.md          (264 lines — all 10 phases detailed)
-│   │       └── parallel_execution.md (135 lines — parallel dispatch pseudocode)
-│   ├── r01-ideation/SKILL.md        (87 lines)
-│   ├── r01-literature/SKILL.md      (79 lines)
-│   ├── r01-writer-hci/SKILL.md      (72 lines)
-│   ├── r01-writer-healthcare/SKILL.md (66 lines)
-│   ├── r01-writer-ai/SKILL.md       (65 lines)
-│   ├── r01-writer-integrator/SKILL.md (60 lines)
-│   ├── r01-reviewer-hci/SKILL.md    (62 lines)
-│   ├── r01-reviewer-healthcare/SKILL.md (62 lines)
-│   ├── r01-reviewer-ai/SKILL.md     (63 lines)
-│   ├── r01-reviewer-panel/SKILL.md  (70 lines)
-│   ├── r01-reviser/SKILL.md         (61 lines)
-│   ├── r01-figures/SKILL.md         (73 lines)
-│   └── r01-budget/SKILL.md          (66 lines)
-└── workspace/                       ← Project workspace templates (copy to shared workspace)
-    ├── _templates/
-    │   ├── project.yaml             (137 lines — project config with aim-to-domain mapping)
-    │   ├── state.json               (45 lines — pipeline state machine)
-    │   ├── cost.jsonl               (cost tracking schema)
-    │   ├── cost.json                (cost summary)
-    │   ├── events.jsonl             (event log schema)
-    │   └── README.md                (77 lines — folder structure docs)
-    └── _system/
-        ├── style_guide.md           (227 lines — NIH R01 writing conventions)
-        ├── reviewer_patterns.json   (71 lines — extracted reviewer feedback patterns)
-        ├── evolution_log.json       (44 lines — system self-evolution log)
-        └── r01_section_specs.md     (433 lines — detailed section specifications)
+├── workspace/                       ← Project workspace templates (copy to shared workspace)
+│   ├── _templates/
+│   │   ├── project.yaml             (137 lines — project config with aim-to-domain mapping)
+│   │   ├── state.json               (pipeline state machine)
+│   │   ├── cost.jsonl               (cost tracking schema)
+│   │   ├── cost.json                (cost summary)
+│   │   ├── events.jsonl             (event log schema)
+│   │   └── README.md                (folder structure docs)
+│   └── _system/
+│       ├── style_guide.md           (227 lines — NIH R01 writing conventions)
+│       ├── reviewer_patterns.json   (71 lines — extracted reviewer feedback patterns)
+│       ├── evolution_log.json       (44 lines — system self-evolution log)
+│       └── r01_section_specs.md     (433 lines — detailed section specifications)
+
+nanobot/skills/                      ← All 14 agent skills (built-in, distributed with package)
+├── r01-orchestrator/
+│   ├── SKILL.md                     (72 lines — state machine, parallel dispatch)
+│   └── references/
+│       ├── pipeline.md              (264 lines — all 10 phases detailed)
+│       └── parallel_execution.md    (135 lines — parallel dispatch pseudocode)
+├── r01-ideation/SKILL.md            (87 lines)
+├── r01-literature/SKILL.md          (79 lines)
+├── r01-writer-hci/SKILL.md          (72 lines)
+├── r01-writer-healthcare/SKILL.md   (66 lines)
+├── r01-writer-ai/SKILL.md           (65 lines)
+├── r01-writer-integrator/SKILL.md   (60 lines)
+├── r01-reviewer-hci/SKILL.md        (62 lines)
+├── r01-reviewer-healthcare/SKILL.md (62 lines)
+├── r01-reviewer-ai/SKILL.md         (63 lines)
+├── r01-reviewer-panel/SKILL.md      (70 lines)
+├── r01-reviser/SKILL.md             (61 lines)
+├── r01-figures/SKILL.md             (73 lines)
+└── r01-budget/SKILL.md              (66 lines)
 ```
 
 ### 3.2 Shared Workspace (Configurable — default: `~/Dropbox/AgentWorkspace/`)
@@ -237,17 +246,27 @@ All 14 skills created with proper YAML frontmatter (`name` + `description`) and 
 | r01-figures | 73 | Yes — matplotlib MVP, CONSORT diagrams |
 | r01-budget | 66 | Yes — NIH budget format, justification |
 
-### Phase C: End-to-End Test — NOT STARTED
+### Phase C: End-to-End Test — IN PROGRESS
 
 **Goal**: Run the orchestrator with a sample project to verify the full pipeline.
 
-**Tasks**:
-- [ ] Create a sample project folder (e.g., `test-project-001/`) by copying templates
-- [ ] Fill in project.yaml with a sample research topic
-- [ ] Run nanobot with r01-orchestrator skill and test each phase sequentially
-- [ ] Verify state.json transitions correctly between phases
-- [ ] Verify parallel writer dispatch (Phase 4) spawns multiple subagents
+**Completed**:
+- [x] Create a sample project folder (`r01-older-adults-mci-home-ai/`) with templates
+- [x] Fill in project.yaml with real research topic (MCI home-based speech monitoring)
+- [x] Run nanobot: init and ideation phases completed successfully
+- [x] User selected idea 3: "Community choir storytelling circles augmented with speech gap analytics"
+- [x] Aligned state.json schema with pipeline spec (added outline phase, fixed writing_parallel/review_parallel structures)
+- [x] Created full project directory structure (literature/, docs/drafts/, figures/, budget/, reviews/, feedback/, export/)
+- [x] Aligned pipeline.md output paths with skill contracts
+- [x] Moved skills from r01-proposal/skills/ to nanobot/skills/ (built-in)
+- [x] Verified all 14 skills discoverable by SkillsLoader from built-in directory
+
+**Remaining**:
+- [ ] Resume pipeline at literature phase and verify r01-literature subagent produces references.json + gaps.md
+- [ ] Verify outline phase (r01-writer-integrator produces outline_v1.md)
+- [ ] Verify parallel writer dispatch (Phase 5) spawns multiple subagents
 - [ ] Verify parallel reviewer dispatch (Phase 7) works
+- [ ] Verify revision loop (score < 5 → back to review)
 - [ ] Fix any issues found during testing
 
 ### Phase D: Ideation Logic — NOT STARTED
@@ -261,29 +280,40 @@ All 14 skills created with proper YAML frontmatter (`name` + `description`) and 
 - [ ] Output to `ideas/ideas.json` with full scoring rubric
 - [ ] Implement user checkpoint: present top ideas for selection
 
-### Phase E: Literature Search — NOT STARTED
+### Phase E: Literature Search — REDESIGNED (parallel, tool-level)
 
-**Goal**: Integrate real literature search (PubMed, Semantic Scholar, web search).
+**Goal**: Three parallel domain literature agents (HCI, Healthcare, AI) using concrete web_search/web_fetch tool chains.
 
-**Tasks**:
-- [ ] Implement PubMed API integration (NCBI E-utilities)
-- [ ] Implement Semantic Scholar API integration
-- [ ] Build annotated bibliography (`references/references.json`)
-- [ ] Generate research gaps analysis (`references/gaps.md`)
-- [ ] Target 30-50 references, prefer recent (5yr) papers
-- [ ] Deduplication across sources
+**Design Changes (implemented)**:
+- [x] Rewrote `r01-literature` SKILL.md with concrete tool-level instructions (web_search, web_fetch, Semantic Scholar API)
+- [x] Skill is now domain-parameterized — spawned per domain with `hci`, `healthcare`, or `ai` assignment
+- [x] Added `literature_parallel` tracking to state.json (3 parallel entries)
+- [x] Updated orchestrator to dispatch 3 literature agents simultaneously
+- [x] Updated pipeline.md with parallel literature phase spec
+- [x] Updated parallel_execution.md with literature dispatch pseudocode
+- [x] Each agent writes `literature/references_{domain}.json` + `literature/gaps_{domain}.md`
+- [x] Merge step combines into `literature/references.json` + `literature/gaps.md` with dedup
 
-### Phase F: Web Dashboard — NOT STARTED
+**Remaining**:
+- [ ] Verify parallel literature dispatch works end-to-end
+- [ ] Verify merge/dedup produces clean combined output
+- [ ] Validate that 30-50 real references are collected across domains
+
+### Phase F: Web Dashboard — COMPLETE (MVP)
 
 **Goal**: NiceGUI-based dashboard for monitoring pipeline progress and costs.
 
-**Tasks**:
-- [ ] Set up NiceGUI project (FastAPI + Vue.js + Tailwind)
-- [ ] Dashboard reads `state.json` for pipeline progress visualization
-- [ ] Dashboard reads `cost.jsonl` for cost tracking / burn-down
-- [ ] Dashboard reads `events.jsonl` for activity timeline
-- [ ] Real-time updates (poll or file-watch)
-- [ ] Per-project view and cross-project summary
+**Completed**:
+- [x] Set up NiceGUI app (`r01-proposal/dashboard/`)
+- [x] `state_reader.py` — data layer reads state.json and cost.json
+- [x] Pipeline progress view — phase status cards, circular progress, parallel task expansion
+- [x] Cost tracking view — per-phase and per-agent tables
+- [x] Event timeline — chronological event log with icons and color-coding
+- [x] Real-time updates — 3-second polling timer with toggle switch
+- [x] Multi-project support — left drawer lists all projects, click to switch
+- [x] Dark theme with Material Design icons
+
+**Run**: `python r01-proposal/dashboard/main.py` → http://localhost:8090
 
 ### Phase G: Figma Integration — NOT STARTED
 
@@ -314,7 +344,7 @@ All 14 skills created with proper YAML frontmatter (`name` + `description`) and 
 
 ### 5.1 How Skills Work
 
-- **SkillsLoader** scans `~/.nanobot/workspace/skills/*/SKILL.md` (workspace, highest priority) and `nanobot/nanobot/skills/*/SKILL.md` (built-in, lower priority)
+- **SkillsLoader** scans `~/.nanobot/workspace/skills/*/SKILL.md` (workspace, highest priority) and `nanobot/nanobot/skills/*/SKILL.md` (built-in, lower priority). R01 skills are distributed as built-in skills and require no manual installation.
 - Each skill = directory with `SKILL.md` + optional `references/`, `scripts/`, `assets/` subdirs
 - YAML frontmatter: `name` (required), `description` (required)
 - Markdown body = instructions injected into agent system prompt when skill is loaded
@@ -376,10 +406,10 @@ Located at `~/.nanobot/config.json`:
 If you are an AI agent continuing this work:
 
 1. **Read this entire document first** — it contains all architectural decisions and constraints
-2. **Run setup** per `README.md` to install skills into your nanobot workspace
+2. **Skills are built-in** — all 14 r01 skills are in `nanobot/skills/` and auto-discovered by SkillsLoader. No manual installation needed.
 3. **Do NOT redo Phases A or B** — they are complete and verified
-4. **Start with Phase C** — end-to-end test with a sample project
+4. **Continue Phase C** — init, ideation, and state alignment are done. Resume at the literature phase for the `r01-older-adults-mci-home-ai` project.
 5. **Respect the constraints** in Section 6 — especially workspace restrictions and parallel execution
 6. **The skills are substantive** — read them; they contain detailed instructions for each agent role
 7. **Check `state.json`** patterns in `workspace/_templates/state.json` — this is how the orchestrator tracks progress
-8. **Parallel execution pseudocode** is in `skills/r01-orchestrator/references/parallel_execution.md`
+8. **Parallel execution pseudocode** is in `nanobot/skills/r01-orchestrator/references/parallel_execution.md`
