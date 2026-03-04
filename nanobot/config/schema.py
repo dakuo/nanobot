@@ -242,7 +242,7 @@ class AgentDefaults(Base):
     )
     max_tokens: int = 8192
     temperature: float = 0.1
-    max_tool_iterations: int = 40
+    max_tool_iterations: int = 60
     memory_window: int = 100
     reasoning_effort: str | None = None  # low / medium / high — enables LLM thinking mode
 
@@ -300,12 +300,21 @@ class HeartbeatConfig(Base):
     interval_s: int = 30 * 60  # 30 minutes
 
 
+class WebConfig(Base):
+    """HTTP API server configuration."""
+
+    enabled: bool = True
+    host: str = "127.0.0.1"
+    token: str = ""
+
+
 class GatewayConfig(Base):
     """Gateway/server configuration."""
 
     host: str = "0.0.0.0"
     port: int = 18790
     heartbeat: HeartbeatConfig = Field(default_factory=HeartbeatConfig)
+    web: WebConfig = Field(default_factory=WebConfig)
 
 
 class WebSearchConfig(Base):

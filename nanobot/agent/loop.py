@@ -7,6 +7,7 @@ import json
 import re
 import weakref
 from contextlib import AsyncExitStack
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Callable
 
@@ -51,7 +52,7 @@ class AgentLoop:
         provider: LLMProvider,
         workspace: Path,
         model: str | None = None,
-        max_iterations: int = 40,
+        max_iterations: int = 60,
         temperature: float = 0.1,
         max_tokens: int = 4096,
         memory_window: int = 100,
@@ -233,6 +234,12 @@ class AgentLoop:
                     reasoning_content=response.reasoning_content,
                     thinking_blocks=response.thinking_blocks,
                 )
+                if response.usage:
+                    messages[-1]["usage"] = {
+                        "input": response.usage.get("prompt_tokens", 0),
+                        "output": response.usage.get("completion_tokens", 0),
+                        "total": response.usage.get("total_tokens", 0),
+                    }
 
                 for tool_call in response.tool_calls:
                     tools_used.append(tool_call.name)
@@ -256,6 +263,12 @@ class AgentLoop:
                     reasoning_content=response.reasoning_content,
                     thinking_blocks=response.thinking_blocks,
                 )
+                if response.usage:
+                    messages[-1]["usage"] = {
+                        "input": response.usage.get("prompt_tokens", 0),
+                        "output": response.usage.get("completion_tokens", 0),
+                        "total": response.usage.get("total_tokens", 0),
+                    }
                 final_content = clean
                 break
 
@@ -379,6 +392,7 @@ class AgentLoop:
                 channel=channel,
                 chat_id=chat_id,
             )
+            messages[-1].setdefault("timestamp", datetime.now().isoformat())
             final_content, _, all_msgs = await self._run_agent_loop(messages)
             self._save_turn(session, all_msgs, 1 + len(history))
             self.sessions.save(session)
@@ -395,8 +409,6 @@ class AgentLoop:
         session = self.sessions.get_or_create(key)
 
         if msg.metadata.get("_context_only"):
-            from datetime import datetime
-
             session.messages.append(
                 {
                     "role": "user",
@@ -481,6 +493,12 @@ class AgentLoop:
             chat_id=msg.chat_id,
         )
 
+        # Pre-stamp the user message so response-time diffs are meaningful.
+        # _save_turn uses setdefault, so this won't be overwritten at save time.
+        # Pre-stamp the user message so response-time diffs are meaningful.
+        # _save_turn uses setdefault, so this won't be overwritten at save time.
+        initial_messages[-1].setdefault("timestamp", datetime.now().isoformat())
+
         async def _bus_progress(content: str, *, tool_hint: bool = False) -> None:
             meta = dict(msg.metadata or {})
             meta["_progress"] = True
@@ -520,8 +538,6 @@ class AgentLoop:
 
     def _save_turn(self, session: Session, messages: list[dict], skip: int) -> None:
         """Save new-turn messages into session, truncating large tool results."""
-        from datetime import datetime
-
         for m in messages[skip:]:
             entry = dict(m)
             role, content = entry.get("role"), entry.get("content")
