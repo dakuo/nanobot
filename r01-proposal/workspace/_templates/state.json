@@ -15,30 +15,50 @@
     "export":     "pending"
   },
 
+  "literature_parallel": {
+    "hci":        { "agent": "r01-literature", "status": "pending", "attempt": 0 },
+    "healthcare": { "agent": "r01-literature", "status": "pending", "attempt": 0 },
+    "ai":         { "agent": "r01-literature", "status": "pending", "attempt": 0 }
+  },
+
   "writing_parallel": {
-    "specific_aims":       { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
-    "significance":        { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
-    "innovation":          { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
-    "approach_aim1":       { "status": "pending", "lead": null, "domain": null, "word_count": 0, "draft_version": 0 },
-    "approach_aim2":       { "status": "pending", "lead": null, "domain": null, "word_count": 0, "draft_version": 0 },
-    "approach_aim3":       { "status": "pending", "lead": null, "domain": null, "word_count": 0, "draft_version": 0 },
-    "approach_timeline":   { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
-    "approach_crosscutting": { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
-    "project_narrative":   { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
-    "project_summary":     { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 }
+    "specific_aims":         { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
+    "significance":          { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
+    "innovation":            { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
+    "approach_aim1":         { "agent": null, "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
+    "approach_aim2":         { "agent": null, "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
+    "approach_aim3":         { "agent": null, "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
+    "approach_timeline":     { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
+    "approach_crosscutting": { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
+    "project_narrative":     { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
+    "project_summary":       { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 }
   },
   "writing_integration": { "status": "pending" },
 
   "review_round": 0,
   "max_review_rounds": 2,
   "review_parallel": {
-    "hci":        { "status": "pending", "score": null },
-    "healthcare": { "status": "pending", "score": null },
-    "ai":         { "status": "pending", "score": null },
-    "panel":      { "status": "pending", "overall_impact": null }
+    "review_hci":        { "agent": "r01-reviewer-hci",        "status": "pending", "attempt": 0, "score": null },
+    "review_healthcare": { "agent": "r01-reviewer-healthcare", "status": "pending", "attempt": 0, "score": null },
+    "review_ai":         { "agent": "r01-reviewer-ai",         "status": "pending", "attempt": 0, "score": null },
+    "panel":             { "agent": "r01-reviewer-panel",      "status": "pending", "attempt": 0, "overall_impact": null }
+  },
+
+  "artifacts": {
+    "ideation_brief": null,
+    "selected_idea": null,
+    "literature_refs": null,
+    "literature_gaps": null,
+    "outline_draft": null,
+    "research_strategy_draft": null,
+    "figure_plan": null,
+    "budget_draft": null,
+    "panel_decision": null,
+    "final_package": null
   },
 
   "checkpoints_awaiting_user": [],
   "started_at": null,
-  "updated_at": null
+  "updated_at": null,
+  "events": []
 }
