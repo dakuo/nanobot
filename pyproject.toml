@@ -24,7 +24,6 @@ dependencies = [
     "websockets>=16.0,<17.0",
     "websocket-client>=1.9.0,<2.0.0",
     "httpx>=0.28.0,<1.0.0",
-    "oauth-cli-kit>=0.1.3,<1.0.0",
     "loguru>=0.7.3,<1.0.0",
     "readability-lxml>=0.8.4,<1.0.0",
     "rich>=14.0.0,<15.0.0",
@@ -68,7 +67,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["nanobot"]
+packages = ["nanobot", "oauth_cli_kit"]
 
 [tool.hatch.build.targets.wheel.sources]
 "nanobot" = "nanobot"
@@ -80,11 +79,13 @@ include = [
     "nanobot/templates/**/*.md",
     "nanobot/skills/**/*.md",
     "nanobot/skills/**/*.sh",
+    "oauth_cli_kit/**/*.py",
 ]
 
 [tool.hatch.build.targets.sdist]
 include = [
     "nanobot/",
+    "oauth_cli_kit/",
     "bridge/",
     "README.md",
     "LICENSE",
