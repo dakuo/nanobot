@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "last_updated": null,
+  "description": "Accumulates reviewer feedback patterns across R01 projects. Populated over time as real NIH reviewer feedback is processed. Do not delete entries — append only.",
+  "patterns": [],
+  "common_weaknesses": [],
+  "common_strengths": [],
+  "domain_specific": {
+    "hci": {
+      "patterns": [],
+      "common_issues": []
+    },
+    "healthcare": {
+      "patterns": [],
+      "common_issues": []
+    },
+    "ai": {
+      "patterns": [],
+      "common_issues": []
+    }
+  },
+  "scoring_calibration": {
+    "notes": "Will be populated after real NIH reviewer feedback is added",
+    "score_examples": []
+  },
+  "schema": {
+    "pattern_entry": {
+      "id": "unique string identifier",
+      "source_project": "project folder name",
+      "section": "specific_aims | significance | innovation | approach | project_summary | project_narrative",
+      "reviewer_quote": "verbatim or paraphrased reviewer comment",
+      "score_impact": "positive | negative | neutral",
+      "criterion_affected": "significance | investigator | innovation | approach | environment | overall",
+      "category": "methods | feasibility | significance | innovation | writing | team | data | statistics | equity | rigor",
+      "frequency": 1,
+      "mitigation": "how to address this pattern in future proposals",
+      "first_seen": "ISO 8601 date",
+      "last_seen": "ISO 8601 date"
+    },
+    "weakness_entry": {
+      "id": "unique string identifier",
+      "description": "description of the weakness pattern",
+      "section": "which section this typically appears in",
+      "frequency_across_projects": 0,
+      "prevention_strategy": "how to prevent this weakness",
+      "example_reviewer_language": []
+    },
+    "strength_entry": {
+      "id": "unique string identifier",
+      "description": "description of the strength pattern",
+      "section": "which section this typically appears in",
+      "frequency_across_projects": 0,
+      "replication_strategy": "how to replicate this strength"
+    },
+    "score_example_entry": {
+      "project": "project folder name",
+      "overall_score": null,
+      "criterion_scores": {
+        "significance": null,
+        "investigator": null,
+        "innovation": null,
+        "approach": null,
+        "environment": null
+      },
+      "percentile": null,
+      "funded": null,
+      "key_reviewer_comments": [],
+      "lessons": []
+    }
+  }
+}

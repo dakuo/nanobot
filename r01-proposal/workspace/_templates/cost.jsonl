@@ -1,0 +1,1 @@
+{"_schema": "nanobot-r01-cost-v1", "fields": ["timestamp", "phase", "agent", "model", "prompt_tokens", "completion_tokens", "cost_usd", "task_description"]}

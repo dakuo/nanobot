@@ -1,0 +1,134 @@
+{
+  "_schema": "r01-cost-tracker/v1",
+  "_note": "Append-only log. Never overwrite entries[]. Aggregate fields may be recomputed from entries[].",
+
+  "total_cost": 0.0,
+
+  "total_tokens": {
+    "input":  0,
+    "output": 0
+  },
+
+  "by_phase": {
+    "init": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "ideation": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "literature": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "writing": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "figures": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "budget": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "review": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "revision": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "export": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    }
+  },
+
+  "by_agent": {
+    "r01-orchestrator": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-ideation": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-literature": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-writer-hci": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-writer-healthcare": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-writer-ai": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-writer-integrator": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-reviewer-hci": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-reviewer-healthcare": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-reviewer-ai": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-reviewer-panel": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-reviser": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-figures": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    },
+    "r01-budget": {
+      "cost":   0.0,
+      "tokens": { "input": 0, "output": 0 },
+      "calls":  0
+    }
+  },
+
+  "entries": []
+}

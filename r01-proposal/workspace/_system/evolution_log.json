@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "description": "Append-only log of system improvements. Each entry records what was learned and what changed. Never delete entries — only append. This log is the institutional memory of the PaperAutoGen system.",
+  "entries": [],
+  "meta": {
+    "description": "Append-only log of system improvements. Each entry records what was learned and what changed.",
+    "entry_schema": {
+      "timestamp": "ISO 8601",
+      "source": "user_feedback | reviewer_feedback | self_reflection",
+      "project": "project folder name",
+      "lesson": "what was learned",
+      "action": "what was changed (file path + description)",
+      "approved_by": "user | auto"
+    },
+    "usage_instructions": {
+      "when_to_add": [
+        "After a project is completed and the user provides feedback on the output",
+        "After NIH reviewer feedback is received and processed",
+        "After a skill identifies a systematic issue in its own output",
+        "After the user explicitly requests a change to system behavior"
+      ],
+      "how_to_add": [
+        "Append a new entry object to the 'entries' array",
+        "Use ISO 8601 format for timestamp (e.g., 2026-03-01T14:30:00Z)",
+        "Be specific in 'lesson' — not 'improve writing' but 'Significance sections need stronger gap enumeration'",
+        "Be specific in 'action' — include the file path and what was changed",
+        "Set 'approved_by' to 'user' if the user explicitly approved the change, 'auto' if the skill made the change autonomously"
+      ],
+      "never_do": [
+        "Never delete entries",
+        "Never modify existing entries",
+        "Never add entries without a specific lesson and action",
+        "Never set approved_by to 'auto' for changes to style_guide.md or r01_section_specs.md — those require user approval"
+      ]
+    },
+    "version_history": [
+      {
+        "version": 1,
+        "date": "2026-03-01",
+        "description": "Initial structure created. System initialized with empty entries array."
+      }
+    ]
+  }
+}

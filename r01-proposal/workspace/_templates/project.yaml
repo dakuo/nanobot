@@ -1,0 +1,137 @@
+# NIH R01 Proposal Project Configuration
+# Copy this file to your project folder and rename to project.yaml
+# Fill in all fields before running the pipeline
+
+# ---------------------------------------------------------------------------
+# Project Metadata
+# ---------------------------------------------------------------------------
+name: "Untitled R01 Proposal"
+shortname: "untitled-r01"          # used for folder names and Slack channels
+created_at: null                   # ISO-8601, set by orchestrator on init
+updated_at: null                   # ISO-8601, updated on every pipeline event
+
+# ---------------------------------------------------------------------------
+# Scientific Topic
+# ---------------------------------------------------------------------------
+topic: >
+  Describe the core scientific question, clinical problem, or technological
+  gap this proposal addresses. Be specific enough that the ideation agent
+  can generate focused specific aims (2–4 sentences recommended).
+
+# ---------------------------------------------------------------------------
+# Domain Tags
+# Drives aim-to-writer routing. Each aim inherits one primary domain tag.
+# Valid values: hci | healthcare | ai
+# ---------------------------------------------------------------------------
+domain_tags:
+  - hci
+  - healthcare
+  - ai
+
+# ---------------------------------------------------------------------------
+# Specific Aims
+# Default structure: 3 aims. Add or remove aims as needed.
+# domain_tag must match one of the values in domain_tags above.
+# lead_writer maps to the corresponding r01-writer-<domain_tag> skill.
+# page_budget is the aim's share of the Approach section (pages).
+# ---------------------------------------------------------------------------
+aims:
+  - title: "Aim 1: Establish and characterize [phenomenon/system]"
+    domain_tag: hci
+    lead_writer: r01-writer-hci
+    page_budget: 3
+
+  - title: "Aim 2: Develop and validate [intervention/algorithm]"
+    domain_tag: ai
+    lead_writer: r01-writer-ai
+    page_budget: 3
+
+  - title: "Aim 3: Evaluate [outcome/deployment] in [population/context]"
+    domain_tag: healthcare
+    lead_writer: r01-writer-healthcare
+    page_budget: 3
+
+# ---------------------------------------------------------------------------
+# Page Budgets (NIH R01 standard: 12-page Research Strategy)
+# specific_aims is a separate 1-page attachment.
+# Total Research Strategy = significance + innovation + approach = 12 pages.
+# ---------------------------------------------------------------------------
+page_budgets:
+  specific_aims: 1
+  significance: 3
+  innovation: 2
+  approach: 9
+  total: 15                        # includes specific_aims page
+
+# ---------------------------------------------------------------------------
+# Word Count Targets
+# Approximate words per page for NIH-formatted documents (11pt Arial, 0.5in margins).
+# ---------------------------------------------------------------------------
+word_count_targets:
+  words_per_page: 500
+  specific_aims: 500
+  significance: 1500
+  innovation: 1000
+  approach: 4500
+  total: 7500
+
+# ---------------------------------------------------------------------------
+# Model Configuration
+# default_model is used by all skills unless overridden below.
+# Override keys must match exact skill names.
+# ---------------------------------------------------------------------------
+model_config:
+  default_model: "claude-opus-4-5"
+  overrides:
+    r01-orchestrator: "claude-opus-4-5"
+    r01-ideation: "claude-opus-4-5"
+    r01-literature: "claude-sonnet-4-5"
+    r01-writer-hci: "claude-opus-4-5"
+    r01-writer-healthcare: "claude-opus-4-5"
+    r01-writer-ai: "claude-opus-4-5"
+    r01-writer-integrator: "claude-opus-4-5"
+    r01-reviewer-hci: "claude-sonnet-4-5"
+    r01-reviewer-healthcare: "claude-sonnet-4-5"
+    r01-reviewer-ai: "claude-sonnet-4-5"
+    r01-reviewer-panel: "claude-opus-4-5"
+    r01-reviser: "claude-opus-4-5"
+    r01-figures: "claude-sonnet-4-5"
+    r01-budget: "claude-sonnet-4-5"
+
+# ---------------------------------------------------------------------------
+# Figma Configuration
+# Set enabled: true and provide file_id to activate figure export via Figma API.
+# ---------------------------------------------------------------------------
+figma_config:
+  enabled: false
+  file_id: "FIGMA_FILE_ID_PLACEHOLDER"
+  export_format: "pdf"             # pdf | png | svg
+
+# ---------------------------------------------------------------------------
+# Prior NIH R01 Examples
+# Folder names relative to PriorNIHR01Examples/.
+# The literature and writing agents will reference these for style and structure.
+# ---------------------------------------------------------------------------
+prior_examples:
+  - "2025PostSurgery"
+  - "2024YouthConcussion"
+  - "2024Cardiotoxic"
+  - "2023Sepsis"
+
+# ---------------------------------------------------------------------------
+# Checkpoint Mode
+# Defines the channel through which user feedback arrives at review gates.
+# "slack"  — orchestrator posts to Slack and waits for human reply
+# "file"   — orchestrator writes a checkpoint file and polls for a response file
+# ---------------------------------------------------------------------------
+checkpoint_mode: "slack"
+
+# ---------------------------------------------------------------------------
+# Pipeline Settings
+# ---------------------------------------------------------------------------
+pipeline:
+  max_review_rounds: 2             # revision loop cap before forced export
+  parallel_writing: true           # run domain writers concurrently per aim
+  parallel_figures_budget: true    # run r01-figures and r01-budget concurrently
+  literature_max_papers: 40        # max papers fetched by r01-literature
+  literature_recency_years: 5      # prefer papers published within N years

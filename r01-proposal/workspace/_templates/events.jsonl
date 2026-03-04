@@ -1,0 +1,1 @@
+{"_schema": "nanobot-r01-events-v1", "fields": ["timestamp", "phase", "event_type", "agent", "detail", "artifacts"]}

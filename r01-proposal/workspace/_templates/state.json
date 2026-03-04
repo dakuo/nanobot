@@ -1,0 +1,44 @@
+{
+  "_schema": "r01-pipeline-state/v1",
+  "current_phase": "init",
+
+  "phase_status": {
+    "init":       "pending",
+    "ideation":   "pending",
+    "literature": "pending",
+    "outline":    "pending",
+    "writing":    "pending",
+    "figures":    "pending",
+    "budget":     "pending",
+    "review":     "pending",
+    "revision":   "pending",
+    "export":     "pending"
+  },
+
+  "writing_parallel": {
+    "specific_aims":       { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
+    "significance":        { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
+    "innovation":          { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
+    "approach_aim1":       { "status": "pending", "lead": null, "domain": null, "word_count": 0, "draft_version": 0 },
+    "approach_aim2":       { "status": "pending", "lead": null, "domain": null, "word_count": 0, "draft_version": 0 },
+    "approach_aim3":       { "status": "pending", "lead": null, "domain": null, "word_count": 0, "draft_version": 0 },
+    "approach_timeline":   { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
+    "approach_crosscutting": { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
+    "project_narrative":   { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 },
+    "project_summary":     { "status": "pending", "lead": "integrator", "word_count": 0, "draft_version": 0 }
+  },
+  "writing_integration": { "status": "pending" },
+
+  "review_round": 0,
+  "max_review_rounds": 2,
+  "review_parallel": {
+    "hci":        { "status": "pending", "score": null },
+    "healthcare": { "status": "pending", "score": null },
+    "ai":         { "status": "pending", "score": null },
+    "panel":      { "status": "pending", "overall_impact": null }
+  },
+
+  "checkpoints_awaiting_user": [],
+  "started_at": null,
+  "updated_at": null
+}
