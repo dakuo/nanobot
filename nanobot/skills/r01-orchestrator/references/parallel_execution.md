@@ -34,6 +34,53 @@ Status values:
 - `complete`: output validated and accepted
 - `failed`: subagent returned error or invalid output
 
+## Pseudocode: Phase 3 Parallel Literature Dispatch
+```python
+state = read_json("state.json")
+cfg = read_yaml("project.yaml")
+
+domains = cfg["domain_tags"]  # ["hci", "healthcare", "ai"]
+
+for domain in domains:
+    state["literature_parallel"][domain] = {"agent": "r01-literature", "status": "pending", "attempt": 0}
+write_json("state.json", state)
+
+for domain in domains:
+    spawn_subagent(
+        skill="r01-literature",
+        task=(
+            f"You are the {domain} literature agent. "
+            f"Read the r01-literature skill and follow its instructions. "
+            f"Your domain assignment is: {domain}. "
+            f"Project path: ~/Dropbox/AgentWorkspace/PaperAutoGen/{{project}}/. "
+            f"Find 10-18 references for the {domain} domain. "
+            f"Write to literature/references_{domain}.json and literature/gaps_{domain}.md."
+        ),
+    )
+    mark_status("literature_parallel", domain, "running")
+
+while not all_complete("literature_parallel"):
+    update_from_results("literature_parallel")
+    if any_failed("literature_parallel"):
+        retry_failed("literature_parallel")
+
+# Merge phase: combine domain outputs
+all_refs = []
+for domain in domains:
+    refs = read_json(f"literature/references_{domain}.json")
+    all_refs.extend(refs)
+
+# Deduplicate by DOI/URL
+merged = deduplicate_by_doi_or_url(all_refs)
+write_json("literature/references.json", merged)
+
+# Merge gap analyses
+gaps_parts = []
+for domain in domains:
+    gaps_parts.append(read_file(f"literature/gaps_{domain}.md"))
+write_file("literature/gaps.md", merge_gap_sections(gaps_parts))
+```
+
 ## Pseudocode: Phase 4 Parallel Writing Dispatch
 ```python
 state = read_json("state.json")

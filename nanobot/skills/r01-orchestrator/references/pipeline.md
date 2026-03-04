@@ -46,8 +46,8 @@ This document defines the 10 canonical pipeline phases for `r01-orchestrator`.
 3. Trigger user checkpoint for idea selection.
 
 **Output artifacts**
-- `docs/ideation/ideas_v1.md`
-- checkpoint event in `events.jsonl`
+- `ideas/ideas.json`
+- checkpoint event in `state.json.events`
 
 **Exit criteria**
 - User selects one concept and confirmation is recorded.
@@ -62,19 +62,30 @@ This document defines the 10 canonical pipeline phases for `r01-orchestrator`.
 - `current_phase = literature`.
 
 **Agent(s)**
-- `r01-literature`.
+- `r01-literature` × 3 in parallel (one per domain: hci, healthcare, ai).
 
 **Actions**
-1. Spawn literature synthesis for selected concept.
-2. Collect evidence map, gaps, and citations.
-3. Persist references for downstream drafting.
+1. Populate `state.json.literature_parallel` with entries for hci, healthcare, ai.
+2. Spawn 3 literature subagents simultaneously, each assigned one domain.
+3. Each agent uses web_search, web_fetch, and API calls to find 10-18 real papers.
+4. Each writes `literature/references_{domain}.json` and `literature/gaps_{domain}.md`.
+5. Track per-domain status in `state.json.literature_parallel`.
+6. When all 3 complete: merge into `literature/references.json` and `literature/gaps.md`, deduplicating by DOI/URL.
 
 **Output artifacts**
-- `docs/literature/lit_synthesis_v1.md`
-- `docs/literature/citations_v1.bib` (or equivalent)
+- `literature/references_hci.json`
+- `literature/references_healthcare.json`
+- `literature/references_ai.json`
+- `literature/gaps_hci.md`
+- `literature/gaps_healthcare.md`
+- `literature/gaps_ai.md`
+- `literature/references.json` (merged, deduplicated)
+- `literature/gaps.md` (merged)
 
 **Exit criteria**
-- Literature synthesis file exists and is marked usable.
+- All 3 domain searches complete with 10+ references each.
+- Merged references.json exists and contains 30-50 references.
+- Merged gaps.md covers all three domains.
 - `phase_status.literature = complete`.
 
 **Error handling**
@@ -151,8 +162,10 @@ This document defines the 10 canonical pipeline phases for `r01-orchestrator`.
 2. Draft captions and figure-text alignment notes.
 
 **Output artifacts**
-- `docs/figures/figure_plan_v1.md`
-- `docs/figures/captions_v1.md`
+- `figures/specs/F{N}.yaml`
+- `figures/exports/F{N}.svg`
+- `figures/exports/F{N}.png`
+- `figures/captions.md`
 
 **Exit criteria**
 - Figure plan and captions are present and linked to aims.
@@ -174,8 +187,8 @@ This document defines the 10 canonical pipeline phases for `r01-orchestrator`.
 2. Produce line-item narrative and justification text.
 
 **Output artifacts**
-- `docs/budget/budget_justification_v1.md`
-- `docs/budget/budget_notes_v1.md`
+- `budget/budget_table.md`
+- `budget/budget_justification.md`
 
 **Exit criteria**
 - Budget draft is complete and consistent with scope.
@@ -201,10 +214,11 @@ This document defines the 10 canonical pipeline phases for `r01-orchestrator`.
 3. When all are complete, spawn panel reviewer for synthesis and score.
 
 **Output artifacts**
-- `docs/reviews/review_hci_v1.md`
-- `docs/reviews/review_healthcare_v1.md`
-- `docs/reviews/review_ai_v1.md`
-- `docs/reviews/review_panel_v1.md`
+- `reviews/review_hci_r{N}.json`
+- `reviews/review_healthcare_r{N}.json`
+- `reviews/review_ai_r{N}.json`
+- `reviews/panel_summary_r{N}.md`
+- `reviews/panel_decision_r{N}.json`
 
 **Exit criteria**
 - Panel review includes impact score (1-9) and prioritized issues.
@@ -230,7 +244,7 @@ This document defines the 10 canonical pipeline phases for `r01-orchestrator`.
 
 **Output artifacts**
 - `docs/drafts/research_strategy_v{N}.md`
-- `docs/revisions/revision_notes_round_{N}.md`
+- `reviews/revision_log_r{N}.md`
 
 **Exit criteria**
 - Revised draft exists and issue responses are documented.
@@ -253,8 +267,8 @@ This document defines the 10 canonical pipeline phases for `r01-orchestrator`.
 3. Post final checkpoint to Slack and wait for user sign-off.
 
 **Output artifacts**
-- `exports/r01_submission_bundle_v1/`
-- `exports/export_manifest_v1.md`
+- `export/r01_submission_bundle_v1/`
+- `export/export_manifest_v1.md`
 
 **Exit criteria**
 - User final approval recorded.

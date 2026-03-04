@@ -16,7 +16,7 @@ The orchestrator drives a state-machine pipeline that reads `state.json`, determ
 |---|---|
 | init | orchestrator |
 | ideation | `r01-ideation` |
-| literature | `r01-literature` |
+| literature | `r01-literature` × 3 (parallel: hci, healthcare, ai) → merge |
 | outline | `r01-writer-integrator` |
 | writing | `r01-writer-integrator` + domain writers |
 | figures | `r01-figures` |
@@ -26,6 +26,19 @@ The orchestrator drives a state-machine pipeline that reads `state.json`, determ
 | export | orchestrator |
 
 See `references/pipeline.md` for full phase contracts and transitions.
+
+# Parallel Literature Dispatch (Phase 3)
+1. Read `project.yaml` → get domain tags.
+2. Populate `state.json.literature_parallel` with one entry per domain.
+3. Spawn 3 literature subagents simultaneously:
+   - Each reads `r01-literature` skill and is assigned one domain: `hci`, `healthcare`, or `ai`.
+   - Task prompt: "You are the {domain} literature agent. Read the r01-literature skill at {skill_path}. Your domain assignment is: {domain}. Project path: ~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/. Find 10-18 references for the {domain} domain and write to literature/references_{domain}.json and literature/gaps_{domain}.md."
+4. Track completion by updating `state.json.literature_parallel.{domain}.status`.
+5. When all 3 domain searches complete:
+   - Merge `literature/references_hci.json`, `literature/references_healthcare.json`, `literature/references_ai.json` into `literature/references.json`.
+   - Merge `literature/gaps_hci.md`, `literature/gaps_healthcare.md`, `literature/gaps_ai.md` into `literature/gaps.md`.
+   - Deduplicate references (same DOI or URL → keep highest-priority annotation).
+   - Update `state.json.artifacts.literature_refs` and `state.json.artifacts.literature_gaps`.
 
 # Parallel Writing Dispatch (Phase 4)
 1. Read `project.yaml` -> get aim-to-domain mapping.
