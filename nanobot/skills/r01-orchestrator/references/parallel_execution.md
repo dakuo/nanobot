@@ -19,7 +19,9 @@ Use two phase-level maps in `state.json`:
 {
   "writing_parallel": {
     "specific_aims": {"agent": "r01-writer-integrator", "status": "pending", "attempt": 0},
-    "approach_aim1": {"agent": "r01-writer-hci", "status": "pending", "attempt": 0}
+    "approach_aim1": {"agent": "r01-writer-hci", "status": "pending", "attempt": 0},
+    "approach_aim2": {"agent": "r01-writer-ai", "status": "pending", "attempt": 0},
+    "approach_aimN": "... populated dynamically from project.yaml aims[]"
   },
   "review_parallel": {
     "review_hci": {"agent": "r01-reviewer-hci", "status": "pending", "attempt": 0},
@@ -81,46 +83,156 @@ for domain in domains:
 write_file("literature/gaps.md", merge_gap_sections(gaps_parts))
 ```
 
-## Pseudocode: Phase 4 Parallel Writing Dispatch
+## Pseudocode: Phase 5 Parallel Writing Dispatch
 ```python
 state = read_json("state.json")
 cfg = read_yaml("project.yaml")
+project_path = "~/Dropbox/AgentWorkspace/PaperAutoGen/{project}"
 
-aim_map = cfg["aim_to_domain"]  # e.g., aim1->hci, aim2->ai, aim3->healthcare
+# --- Build aim map dynamically from project.yaml ---
+aims = cfg["aims"]  # list of N aims (2-4 typically)
+aim_map = {}
+for i, aim in enumerate(aims, start=1):
+    aim_map[f"aim{i}"] = aim["domain_tag"]  # e.g. {"aim1": "hci", "aim2": "ai", "aim3": "healthcare", "aim4": "hci"}
 
-tasks = {
-    "specific_aims": "r01-writer-integrator",
-    "significance": "r01-writer-integrator",
-    "innovation": "r01-writer-integrator",
-    "project_narrative": "r01-writer-integrator",
-    "project_summary": "r01-writer-integrator",
-    "approach_aim1": f"r01-writer-{aim_map['aim1']}",
-    "approach_aim2": f"r01-writer-{aim_map['aim2']}",
-    "approach_aim3": f"r01-writer-{aim_map['aim3']}",
-    "approach_timeline": "r01-writer-integrator",
-    "approach_crosscutting": "r01-writer-integrator",
+model_overrides = cfg["model_config"]["overrides"]
+
+# --- Define batches: 1 integrator batch (A) + N aim batches + 1 assembly batch (E) ---
+
+batch_a = {
+    "label": "integrator-framing",
+    "skill": "r01-writer-integrator",
+    "sections": {
+        "specific_aims":  {"word_target": 500,  "output": "docs/drafts/specific_aims_v1.md"},
+        "significance":   {"word_target": 1500, "output": "docs/drafts/significance_v1.md"},
+        "innovation":     {"word_target": 1000, "output": "docs/drafts/innovation_v1.md"},
+    },
 }
 
-for section, agent in tasks.items():
-    state["writing_parallel"][section] = {"agent": agent, "status": "pending", "attempt": 0}
+# Generate one batch per aim dynamically
+aim_batches = []
+for aim_key, domain in aim_map.items():
+    aim_num = aim_key.replace("aim", "")
+    page_budget = aims[int(aim_num) - 1].get("page_budget", 3)
+    word_target = page_budget * cfg["word_count_targets"]["words_per_page"]
+    aim_batches.append({
+        "label": f"writer-{domain}-{aim_key}",
+        "skill": f"r01-writer-{domain}",
+        "sections": {
+            f"approach_{aim_key}": {"word_target": word_target, "output": f"docs/drafts/approach_{aim_key}_v1.md"},
+        },
+    })
+
+# --- Populate state.json with dynamic aim entries ---
+for aim_key, domain in aim_map.items():
+    state["writing_parallel"][f"approach_{aim_key}"] = {
+        "agent": f"r01-writer-{domain}",
+        "status": "pending",
+        "attempt": 0,
+        "word_count": 0,
+        "draft_version": 0,
+    }
+
+# --- Mark all batch A + aim batches as running ---
+all_parallel_batches = [batch_a] + aim_batches
+for batch in all_parallel_batches:
+    for section in batch["sections"]:
+        state["writing_parallel"][section]["status"] = "running"
+        state["writing_parallel"][section]["attempt"] += 1
 write_json("state.json", state)
 
-for section, agent in tasks.items():
-    spawn_subagent(
-        skill=agent,
-        task=(
-            f"Read PriorNIHR01Examples/ for style, then write {section} "
-            f"to docs/drafts/{section}_v{{N}}.md"
-        ),
+# --- Spawn batch A + all aim batches simultaneously ---
+for batch in all_parallel_batches:
+    skill_name = batch["skill"]
+    skill_path = find_skill_path(skill_name)
+    model = model_overrides.get(skill_name, cfg["model_config"]["default_model"])
+
+    section_specs = "\n".join(
+        f"  - {name}: {info['word_target']} words → {info['output']}"
+        for name, info in batch["sections"].items()
     )
-    mark_status("writing_parallel", section, "running")
 
-while not all_complete("writing_parallel"):
-    update_from_results("writing_parallel")
-    if any_failed("writing_parallel"):
-        retry_failed("writing_parallel")
+    spawn(
+        label=batch["label"],
+        max_iterations=30,
+        model=model,
+        task=f"""You are a writing subagent. Read the {skill_name} skill at {skill_path} and follow its instructions.
 
-spawn_subagent(skill="r01-writer-integrator", task="Merge sections into docs/drafts/research_strategy_v1.md")
+PROJECT: {project_path}
+SECTIONS TO WRITE:
+{section_specs}
+
+REQUIRED INPUTS (read these before writing):
+- Project config: {project_path}/project.yaml
+- Proposal outline: {project_path}/docs/outline.md (find your section specs here)
+- Literature: {project_path}/literature/refs.json and {project_path}/literature/gaps.md
+- Selected idea: {project_path}/ideas/ideas.json
+- Style references: ~/Dropbox/AgentWorkspace/PriorNIHR01Examples/ (read 1-2 for voice calibration)
+- System style guide: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/style_guide.md
+- Section specs: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/r01_section_specs.md
+
+INSTRUCTIONS:
+1. Read the skill file first for your role and quality standards.
+2. Read outline.md and locate YOUR assigned section(s) — use the heading structure and word targets there.
+3. Read refs.json and gaps.md to incorporate citations and address gaps.
+4. Read 1-2 prior examples from PriorNIHR01Examples/ for NIH voice calibration.
+5. Write each section to its output file. Use markdown with proper heading hierarchy.
+6. Each section MUST meet its word target (±10%).
+7. Cite references using [AuthorYear] format matching refs.json entries.
+8. Do NOT modify state.json — the orchestrator handles tracking.""",
+    )
+
+# --- Wait for all parallel batches to complete ---
+# The orchestrator receives completion notifications via message bus.
+# On each notification, mark the batch's sections as "complete" in state.json.
+# When all batches are complete, proceed to assembly.
+
+# --- Spawn batch E: assembly (after all parallel batches complete) ---
+for section in ["approach_timeline", "approach_crosscutting", "project_narrative", "project_summary"]:
+    state["writing_parallel"][section]["status"] = "running"
+    state["writing_parallel"][section]["attempt"] += 1
+write_json("state.json", state)
+
+integrator_model = model_overrides.get("r01-writer-integrator", cfg["model_config"]["default_model"])
+integrator_skill_path = find_skill_path("r01-writer-integrator")
+
+# Build dynamic aim list for assembly prompt
+aim_file_list = ", ".join(f"approach_{aim_key}" for aim_key in aim_map)
+
+spawn(
+    label="integrator-assembly",
+    max_iterations=30,
+    model=integrator_model,
+    task=f"""You are the integration writer. Read the r01-writer-integrator skill at {integrator_skill_path} and follow its instructions.
+
+PROJECT: {project_path}
+
+PHASE 1 — Write remaining sections:
+- approach_timeline: 300 words → docs/drafts/approach_timeline_v1.md
+- approach_crosscutting: 300 words → docs/drafts/approach_crosscutting_v1.md
+- project_narrative: 1 sentence → docs/drafts/project_narrative_v1.md
+- project_summary: 30 lines → docs/drafts/project_summary_v1.md
+
+PHASE 2 — Merge all section drafts into a single document:
+- Read ALL files in docs/drafts/ (specific_aims, significance, innovation, {aim_file_list}, timeline, crosscutting)
+- Merge into docs/drafts/research_strategy_v1.md following NIH section order
+- Resolve terminology conflicts across domain writers
+- Ensure one coherent voice, no duplicated background text
+- Verify total Research Strategy is within 15-page budget (~7500 words)
+
+REQUIRED INPUTS:
+- Project config: {project_path}/project.yaml
+- Proposal outline: {project_path}/docs/outline.md
+- All section drafts: {project_path}/docs/drafts/*.md
+- Literature: {project_path}/literature/refs.json and {project_path}/literature/gaps.md
+- Selected idea: {project_path}/ideas/ideas.json
+- Style guide: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/style_guide.md
+- Section specs: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/r01_section_specs.md
+
+Do NOT modify state.json — the orchestrator handles tracking.""",
+)
+
+# On completion: mark all remaining sections + writing_integration as "complete"
 ```
 
 ## Pseudocode: Phase 7 Parallel Review Dispatch
