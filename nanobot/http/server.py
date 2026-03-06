@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import json
 import secrets
 import time
 import uuid
@@ -56,6 +58,19 @@ body{background:#1a1a2e;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFo
 #input-bar button:hover{background:#1a4a8a}
 #input-bar button:disabled{opacity:.5;cursor:not-allowed}
 #error-banner{display:none;padding:8px 16px;background:#4a1010;color:#ff6b6b;font-size:13px;text-align:center}
+#agent-panel{height:0;overflow:hidden;transition:height .3s;background:#12122a;border-top:1px solid #2a2a4a;display:flex;flex-direction:column}
+#agent-panel.open{height:240px}
+#agent-toggle{padding:6px 16px;background:#16213e;border-top:1px solid #333;cursor:pointer;font-size:12px;color:#888;display:flex;justify-content:space-between;align-items:center;user-select:none}
+#agent-toggle:hover{background:#1a1a3a}
+#agent-toggle .badge{background:#0f3460;color:#4a9eff;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px}
+#agent-events{flex:1;overflow-y:auto;padding:8px 16px;font-family:'SF Mono',Monaco,monospace;font-size:12px;line-height:1.6}
+.agent-evt{padding:2px 0;border-bottom:1px solid #1a1a2e}
+.agent-evt .time{color:#555;margin-right:8px}
+.agent-evt .label{color:#4a9eff;font-weight:500;margin-right:6px}
+.agent-evt .tool{color:#c4f042}
+.agent-evt .status-ok{color:#4ade80}
+.agent-evt .status-error{color:#ff6b6b}
+.agent-evt .preview{color:#888;margin-left:4px}
 </style>
 </head>
 <body>
@@ -83,6 +98,13 @@ body{background:#1a1a2e;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFo
     <div id="error-banner"></div>
     <div id="empty-state">Select a session from the sidebar to view messages.</div>
     <div id="messages" style="display:none"></div>
+    <div id="agent-toggle" onclick="toggleAgentPanel()">
+      <span>&#x1f527; Agent Activity <span id="agent-badge" class="badge" style="display:none">0</span></span>
+      <span id="agent-arrow">&#x25B2;</span>
+    </div>
+    <div id="agent-panel">
+      <div id="agent-events"></div>
+    </div>
     <div id="input-bar">
       <input id="msg-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg()" disabled>
       <button id="send-btn" onclick="sendMsg()" disabled>Send</button>
@@ -132,6 +154,8 @@ async function enterApp() {
   document.getElementById('token-gate').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   await loadSessions();
+
+  connectSSE();
 
   if (SESSION_KEY) {
     selectSession(SESSION_KEY);
@@ -320,12 +344,72 @@ async function sendMsg() {
   inp.disabled = false;
   inp.focus();
 }
+
+let evtSource = null;
+const activeAgents = {};
+
+function connectSSE() {
+  if (evtSource) evtSource.close();
+  evtSource = new EventSource('/api/events?token=' + encodeURIComponent(TOKEN));
+  evtSource.onmessage = function(e) {
+    try { renderAgentEvent(JSON.parse(e.data)); } catch(err) {}
+  };
+  evtSource.onerror = function() {
+    setTimeout(connectSSE, 3000);
+  };
+}
+
+function renderAgentEvent(evt) {
+  var div = document.getElementById('agent-events');
+  var el = document.createElement('div');
+  el.className = 'agent-evt';
+  var time = new Date(evt.timestamp * 1000).toLocaleTimeString();
+  if (evt.type === 'start') {
+    activeAgents[evt.task_id] = evt.label;
+    el.innerHTML = '<span class="time">' + time + '</span><span class="label">[' + evt.label + ']</span> started';
+  } else if (evt.type === 'tool_call') {
+    var label = activeAgents[evt.task_id] || evt.task_id;
+    el.innerHTML = '<span class="time">' + time + '</span><span class="label">[' + label + ']</span> <span class="tool">' + evt.tool + '</span><span class="preview"> ' + (evt.args_preview || '').substring(0, 120) + '</span>';
+  } else if (evt.type === 'tool_result') {
+    var label = activeAgents[evt.task_id] || evt.task_id;
+    el.innerHTML = '<span class="time">' + time + '</span><span class="label">[' + label + ']</span> <span class="tool">' + evt.tool + '</span> &#x2192; <span class="preview">' + (evt.result_preview || '').substring(0, 100) + '</span>';
+  } else if (evt.type === 'thinking') {
+    var label = activeAgents[evt.task_id] || evt.task_id;
+    el.innerHTML = '<span class="time">' + time + '</span><span class="label">[' + label + ']</span> &#x1F4AD; <span class="preview">' + (evt.content_preview || '').substring(0, 150) + '</span>';
+  } else if (evt.type === 'complete') {
+    var label = activeAgents[evt.task_id] || evt.label || evt.task_id;
+    var cls = evt.status === 'ok' ? 'status-ok' : 'status-error';
+    el.innerHTML = '<span class="time">' + time + '</span><span class="label">[' + label + ']</span> <span class="' + cls + '">' + (evt.status === 'ok' ? '&#x2713; done' : '&#x2717; failed') + '</span>';
+    delete activeAgents[evt.task_id];
+  }
+  div.appendChild(el);
+  div.scrollTop = div.scrollHeight;
+  updateBadge();
+}
+
+function updateBadge() {
+  var badge = document.getElementById('agent-badge');
+  var count = Object.keys(activeAgents).length;
+  if (count > 0) {
+    badge.textContent = count + ' active';
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function toggleAgentPanel() {
+  var panel = document.getElementById('agent-panel');
+  var arrow = document.getElementById('agent-arrow');
+  panel.classList.toggle('open');
+  arrow.innerHTML = panel.classList.contains('open') ? '&#x25BC;' : '&#x25B2;';
+}
 </script>
 </body>
 </html>"""
 
 
-_NO_AUTH_ROUTES = {("GET", "/api/health"), ("GET", "/chat")}
+_NO_AUTH_ROUTES = {("GET", "/api/health"), ("GET", "/chat"), ("GET", "/api/events")}
 
 
 def _extract_visible_messages(session) -> list[dict]:
@@ -438,6 +522,39 @@ class HTTPServer:
             logger.exception("chat completions error")
             return web.json_response({"error": str(exc)}, status=500)
 
+    async def _events_stream(self, request: web.Request) -> web.StreamResponse:
+        """SSE endpoint streaming subagent events in real-time."""
+        token = request.query.get("token", "")
+        if token != self.token:
+            return web.json_response({"error": "Unauthorized"}, status=401)
+
+        response = web.StreamResponse(
+            status=200,
+            reason="OK",
+            headers={
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
+        await response.prepare(request)
+
+        queue = self.agent.subagents.subscribe_events()
+        try:
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=30.0)
+                    data = json.dumps(event, ensure_ascii=False)
+                    await response.write(f"data: {data}\n\n".encode())
+                except asyncio.TimeoutError:
+                    await response.write(b": keepalive\n\n")
+                except ConnectionResetError:
+                    break
+        finally:
+            self.agent.subagents.unsubscribe_events(queue)
+        return response
+
     async def _chat_page(self, _request: web.Request) -> web.Response:
         return web.Response(text=_CHAT_HTML, content_type="text/html")
 
@@ -447,6 +564,7 @@ class HTTPServer:
         app.router.add_get("/api/sessions", self._list_sessions)
         app.router.add_get("/api/session", self._get_session)
         app.router.add_post("/v1/chat/completions", self._chat_completions)
+        app.router.add_get("/api/events", self._events_stream)
         app.router.add_get("/chat", self._chat_page)
 
         self._runner = web.AppRunner(app)
