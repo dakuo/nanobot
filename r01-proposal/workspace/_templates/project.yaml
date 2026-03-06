@@ -11,6 +11,80 @@ created_at: null                   # ISO-8601, set by orchestrator on init
 updated_at: null                   # ISO-8601, updated on every pipeline event
 
 # ---------------------------------------------------------------------------
+# Investigators
+# At minimum, provide PI name and institution. scholar_id enables automatic
+# publication fetching for literature self-citation and team credibility.
+# co_investigators and key_personnel drive budget personnel and reviewer
+# "Investigator" dimension scoring.
+# If left empty, the system prompts for this at Phase 0.5 (metadata collection).
+# ---------------------------------------------------------------------------
+investigators:
+  pi:
+    name: null                       # "Dr. Jane Smith"
+    institution: null                # "Stanford University"
+    department: null                 # "Division of Gastroenterology and Hepatology"
+    scholar_id: null                 # Google Scholar ID or ORCID (e.g., "0000-0002-1234-5678")
+    expertise: []                    # ["human-centered AI", "clinical informatics"]
+  co_investigators:
+    # - name: "Dr. John Doe"
+    #   institution: "Stanford University"
+    #   role: "Co-I, HCI Lead"
+    #   expertise: ["human-centered design", "health informatics"]
+    #   scholar_id: null
+    #   effort_percent: 20           # % effort on this project
+    # - name: "Dr. Sarah Kim"
+    #   role: "Co-I, AI Lead"
+    #   expertise: ["clinical ML", "multimodal learning"]
+    #   scholar_id: null
+    #   effort_percent: 15
+  key_personnel:
+    # - name: "Alex Johnson"
+    #   role: "Biostatistician"
+    #   effort_percent: 10
+    # - name: "Maria Garcia"
+    #   role: "Project Coordinator"
+    #   effort_percent: 50
+
+# ---------------------------------------------------------------------------
+# NIH Context
+# target_institute: NIH IC code (e.g., NIDDK, NIBIB, NCI, NIA, NIMH).
+#   If null, the r01-foa-finder agent searches for appropriate ICs.
+# clinical_trial_classification: Determines which Parent R01 NOFO applies:
+#   "not_allowed"  → PA-25-301 (no clinical trial component)
+#   "optional"     → PA-25-302 (may include clinical trial)
+#   "required"     → PA-25-303 (must include clinical trial)
+# foa: Specific Funding Opportunity Announcement (e.g., PAR-26-042).
+#   If null, the system recommends Parent R01 + relevant Highlighted Topics.
+# If any field is null, Phase 0.5 (metadata collection) will prompt the user
+# or run r01-foa-finder to infer appropriate values.
+# ---------------------------------------------------------------------------
+nih_context:
+  target_institute: null             # "NIDDK" | "NIBIB" | "NCI" | etc.
+  clinical_trial_classification: null  # "not_allowed" | "optional" | "required"
+  foa:
+    number: null                     # "PA-25-302" or "PAR-26-042"
+    title: null                      # "Parent R01 (Clinical Trial Optional)"
+    type: null                       # "PA" | "PAR" | "PAS" | "RFA"
+  highlighted_topics: []             # auto-populated by r01-foa-finder if relevant
+  program_officers: []               # auto-populated by r01-foa-finder from NIH Reporter
+
+# ---------------------------------------------------------------------------
+# Submission Timeline
+# cycle: Next R01 standard receipt date (Feb 5, Jun 5, Oct 5).
+# type: "new" (first submission), "resubmission" (A1), "renewal" (continuation).
+# project_start: Estimated start (~9 months after submission).
+# budget_period_years: Typically 5 for R01.
+# If null, the system calculates based on next available cycle.
+# ---------------------------------------------------------------------------
+submission:
+  cycle: null                        # "2026-10-05" (YYYY-MM-DD)
+  type: "new"                        # "new" | "resubmission" | "renewal"
+  resubmission_suffix: null          # "A1" if resubmission, null otherwise
+  project_start: null                # "2027-07-01" (estimated)
+  project_end: null                  # "2032-06-30" (project_start + budget_period - 1 day)
+  budget_period_years: 5
+
+# ---------------------------------------------------------------------------
 # Scientific Topic
 # ---------------------------------------------------------------------------
 topic: >
@@ -30,7 +104,9 @@ domain_tags:
 
 # ---------------------------------------------------------------------------
 # Specific Aims
-# Default structure: 3 aims. Add or remove aims as needed.
+# Supports 2-4 aims. Add or remove aim entries as needed.
+# The pipeline dynamically generates writing batches, state tracking, and
+# reviewer coverage based on the number of aims defined here.
 # domain_tag must match one of the values in domain_tags above.
 # lead_writer maps to the corresponding r01-writer-<domain_tag> skill.
 # page_budget is the aim's share of the Approach section (pages).
@@ -50,6 +126,12 @@ aims:
     domain_tag: healthcare
     lead_writer: r01-writer-healthcare
     page_budget: 3
+
+  # Uncomment for a 4-aim proposal:
+  # - title: "Aim 4: Integrate and deploy [system] in [real-world setting]"
+  #   domain_tag: hci        # or any domain_tag
+  #   lead_writer: r01-writer-hci
+  #   page_budget: 2
 
 # ---------------------------------------------------------------------------
 # Page Budgets (NIH R01 standard: 12-page Research Strategy)
@@ -85,6 +167,7 @@ model_config:
   overrides:
     r01-orchestrator: "claude-opus-4-5"
     r01-ideation: "claude-opus-4-5"
+    r01-novelty-checker: "claude-sonnet-4-5"   # search-heavy, Sonnet is cost-effective
     r01-literature: "claude-sonnet-4-5"
     r01-writer-hci: "claude-opus-4-5"
     r01-writer-healthcare: "claude-opus-4-5"
@@ -97,15 +180,23 @@ model_config:
     r01-reviser: "claude-opus-4-5"
     r01-figures: "claude-sonnet-4-5"
     r01-budget: "claude-sonnet-4-5"
+    r01-foa-finder: "claude-sonnet-4-5"   # search-heavy, Sonnet is cost-effective
 
 # ---------------------------------------------------------------------------
 # Figma Configuration
-# Set enabled: true and provide file_id to activate figure export via Figma API.
+# The pipeline uses Figma MCP for bidirectional sync: reading design context,
+# component metadata, and exporting figure frames for proposal inclusion.
+# For frames not in Figma, the pipeline generates figures via matplotlib.
+# Set enabled: true and provide file_key to activate.
+# frame_mapping: explicit Figma node_id per figure. If omitted, the agent
+# matches frames by name convention: "F{N} - Description".
 # ---------------------------------------------------------------------------
 figma_config:
   enabled: false
-  file_id: "FIGMA_FILE_ID_PLACEHOLDER"
-  export_format: "pdf"             # pdf | png | svg
+  file_key: null                     # from Figma URL: figma.com/file/FILE_KEY/...
+  access_token_env: "FIGMA_TOKEN"    # env var name (never store token directly)
+  export_scale: 3                    # 1-4x (3 ≈ 300 DPI)
+  frame_mapping: {}                  # e.g., {F1: "1:23", F3: "4:56"}
 
 # ---------------------------------------------------------------------------
 # Prior NIH R01 Examples

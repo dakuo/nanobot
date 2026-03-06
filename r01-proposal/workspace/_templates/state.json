@@ -4,6 +4,7 @@
 
   "phase_status": {
     "init":       "pending",
+    "metadata":   "pending",
     "ideation":   "pending",
     "literature": "pending",
     "outline":    "pending",
@@ -12,7 +13,8 @@
     "budget":     "pending",
     "review":     "pending",
     "revision":   "pending",
-    "export":     "pending"
+    "export":     "pending",
+    "evolution":  "pending"
   },
 
   "literature_parallel": {
@@ -21,13 +23,11 @@
     "ai":         { "agent": "r01-literature", "status": "pending", "attempt": 0 }
   },
 
+  "_writing_parallel_note": "The orchestrator MUST populate approach_aim{N} entries dynamically during init phase based on project.yaml aims[] array. The template below shows fixed sections only. For each aim in project.yaml, add: approach_aim{N}: {agent: r01-writer-{aim.domain_tag}, status: pending, attempt: 0, word_count: 0, draft_version: 0}",
   "writing_parallel": {
     "specific_aims":         { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
     "significance":          { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
     "innovation":            { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
-    "approach_aim1":         { "agent": null, "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
-    "approach_aim2":         { "agent": null, "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
-    "approach_aim3":         { "agent": null, "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
     "approach_timeline":     { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
     "approach_crosscutting": { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
     "project_narrative":     { "agent": "r01-writer-integrator", "status": "pending", "attempt": 0, "word_count": 0, "draft_version": 0 },
@@ -54,8 +54,11 @@
     "figure_plan": null,
     "budget_draft": null,
     "panel_decision": null,
-    "final_package": null
+    "final_package": null,
+    "evolution_summary": null
   },
+
+  "pre_review_gate": null,
 
   "checkpoints_awaiting_user": [],
   "started_at": null,

@@ -19,6 +19,8 @@
 
 **Jargon Policy:** Every technical term must be defined on first use. Acronyms must be spelled out on first use and used consistently thereafter. Do not assume reviewers share your exact subdomain — study sections are multidisciplinary.
 
+**Explanatory Insertions:** When inline explanation is needed, use relative clauses (`which`, `who`) or parenthetical asides — never em-dash parentheticals that create long interrupting clauses. Avoid: "wearable sensing — passive continuous sensing via consumer wearables collecting accelerometry — no additional hardware." Prefer: "Wearable sensing collects accelerometry passively through consumer wearables (Fitbit or Apple Watch), which interface with standard health APIs."
+
 **Tone Calibration by Section:**
 - Specific Aims: Compelling, urgent, confident. This is the sales pitch.
 - Significance: Authoritative, evidence-heavy, measured urgency.

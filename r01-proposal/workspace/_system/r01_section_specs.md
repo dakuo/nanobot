@@ -20,7 +20,8 @@ Application Package
     └── Approach                        (~7–8 pages)
         ├── Aim 1
         ├── Aim 2
-        └── Aim 3 (if applicable)
+        ├── Aim 3
+        └── Aim 4 (if applicable; 2-4 aims typical)
 ```
 
 ---
@@ -103,7 +104,7 @@ The Project Narrative is the plain-language summary required by NIH for public a
 - **Format:** Flowing prose with aim descriptions; may use bold for aim titles
 
 ### Purpose
-The Specific Aims page is the most important page in the application. Many reviewers read only this page before scoring. It must: (1) establish the problem's importance, (2) position the team's approach as the right solution, (3) state a clear hypothesis, and (4) describe 2–3 aims that are logical, feasible, and impactful.
+The Specific Aims page is the most important page in the application. Many reviewers read only this page before scoring. It must: (1) establish the problem's importance, (2) position the team's approach as the right solution, (3) state a clear hypothesis, and (4) describe 2–4 aims that are logical, feasible, and impactful.
 
 ### Required Structure
 
@@ -122,7 +123,7 @@ The Specific Aims page is the most important page in the application. Many revie
 - 1–2 sentences establishing why this team is uniquely qualified
 - Reference key preliminary data, datasets, or clinical partnerships
 
-#### Specific Aims (2–3 aims, ~200 words total)
+#### Specific Aims (2–4 aims, ~200 words total)
 For each aim:
 - **Aim [N]: [Bold title — action verb + object]** (e.g., "Aim 1: Develop and validate a multimodal AI model for early sepsis-AKI prediction")
 - 2–3 sentences: what will be done, how, and what will be produced
@@ -153,6 +154,7 @@ Aim 2: [Action verb + specific deliverable]
 [2–3 sentences: what, how, deliverable]
 
 Aim 3 (if applicable): [Action verb + specific deliverable]
+  Aim 4 (if applicable): [Action verb + specific deliverable]
 [2–3 sentences: what, how, deliverable]
 
 [Closing: Impact on field + public health relevance]
