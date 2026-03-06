@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from nanobot.agent.memory import MemoryStore
 from nanobot.agent.skills import SkillsLoader
+from nanobot.utils.helpers import detect_image_mime
 
 if TYPE_CHECKING:
     from nanobot.config.schema import Mem0Config
@@ -176,13 +177,15 @@ Reply directly with text for conversations. Only use the 'message' tool to send 
         unsupported_names: list[str] = []
         for path in media:
             p = Path(path)
-            mime, _ = mimetypes.guess_type(path)
             if not p.is_file():
                 continue
-            if not mime or not mime.startswith(self._SUPPORTED_MEDIA_PREFIX):
+            raw = p.read_bytes()
+            # Detect real MIME type from magic bytes; fallback to filename guess
+            mime = detect_image_mime(raw) or mimetypes.guess_type(path)[0]
+            if not mime or not mime.startswith("image/"):
                 unsupported_names.append(p.name)
                 continue
-            b64 = base64.b64encode(p.read_bytes()).decode()
+            b64 = base64.b64encode(raw).decode()
             images.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}})
 
         if unsupported_names:
