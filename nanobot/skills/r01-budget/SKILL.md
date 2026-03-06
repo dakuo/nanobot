@@ -8,6 +8,8 @@ Generate a defensible NIH R01 budget package with transparent line items and jus
 
 # Inputs
 - Read all budget parameters from `project.yaml`.
+- Read `project.yaml.investigators` for PI, co-investigator, and key personnel roster (names, roles, effort percentages, institutions). Use these to generate the personnel section with real names and roles rather than generic placeholders.
+- Read `project.yaml.submission.budget_period_years` for the grant duration (default 5 years).
 - Read scope, milestones, and staffing assumptions from `docs/`.
 - Read any existing budget artifacts in `budget/` before updating.
 
@@ -22,6 +24,8 @@ Produce modular categories:
 
 # Personnel Costing
 - Map each role to aims and year-by-year effort.
+- Use names and effort percentages from `project.yaml.investigators` when available. For each PI and co-investigator: use their actual name, institution, role, and effort_percent. For key_personnel: use their name and effort_percent.
+- If investigator data is not available, use descriptive role titles (e.g., "PI", "Co-I, HCI Lead") and reasonable effort estimates.
 - Include salary basis, effort fraction, and fringe assumptions.
 - Distinguish key personnel from trainees and support staff.
 - Explain role necessity in execution terms.
