@@ -39,6 +39,9 @@ Use and explain when appropriate:
 - Read `literature/references.json` and `literature/gaps.md` if present.
 - Read existing domain drafts in `docs/drafts/` before writing.
 - Read prior examples in `~/Dropbox/AgentWorkspace/PriorNIHR01Examples/` for style calibration.
+- Read `_system/writing_voice.md` for personal generic voice calibration.
+- Read `_system/writing_voice_hci.md` for HCI-specific voice calibration. Where this file conflicts with `writing_voice.md`, this file takes precedence for HCI sections.
+- Read `_system/style_guide.md` for NIH conventions. Precedence: `writing_voice_hci.md` > `writing_voice.md` > `style_guide.md`.
 
 # Output Locations
 - Write new or updated drafts in `docs/drafts/`.
@@ -57,6 +60,24 @@ For each subsection:
 - Respect page limits defined in `project.yaml` and section specs.
 - Keep background concise and methods dense.
 - Eliminate repeated text already handled by healthcare or AI writers.
+
+# Agent Learnings Output
+At the end of your work, append an `agent_learnings` JSON block to your final output. This enables cross-agent learning without requiring the generic self-improvement skill.
+
+```json
+{
+  "agent_learnings": [
+    {"type": "error_recovered|better_approach|style_observation", "detail": "specific description"}
+  ]
+}
+```
+
+Log only genuinely useful observations:
+- API or tool behavior that differed from expectation
+- Writing patterns that worked well or poorly for this section type
+- Citation sources that were unexpectedly productive or barren
+- Style guide rules that needed interpretation for this domain
+Do not log routine operations. The orchestrator collects these and routes to the evolution agent.
 
 # Quality Bar
 - Every HCI claim maps to measurable evidence.
