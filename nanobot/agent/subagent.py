@@ -87,6 +87,7 @@ class SubagentManager:
         session_key: str | None = None,
         max_iterations: int | None = None,
         model: str | None = None,
+        workspace: str | None = None,
     ) -> str:
         """Spawn a subagent to execute a task in the background.
 
@@ -94,6 +95,9 @@ class SubagentManager:
             max_iterations: Override default iteration limit (15). Use higher
                 values (e.g. 30) for complex writing or multi-step tasks.
             model: Override the default LLM model for this subagent.
+            workspace: Override the working directory for this subagent.
+                Relative paths in file tools resolve against this directory.
+                If omitted, uses the default workspace (~/.nanobot/workspace/).
         """
         task_id = str(uuid.uuid4())[:8]
         display_label = label or task[:30] + ("..." if len(task) > 30 else "")
@@ -107,6 +111,7 @@ class SubagentManager:
                 origin,
                 max_iterations=max_iterations,
                 model=model,
+                workspace=workspace,
             )
         )
         self._running_tasks[task_id] = bg_task
@@ -139,24 +144,27 @@ class SubagentManager:
         origin: dict[str, str],
         max_iterations: int | None = None,
         model: str | None = None,
+        workspace: str | None = None,
     ) -> None:
         """Execute the subagent task and announce the result."""
         logger.info("Subagent [{}] starting task: {}", task_id, label)
         self._broadcast_event({"type": "start", "task_id": task_id, "label": label})
         effective_model = model or self.model
         effective_max_iter = max_iterations or 15
+        effective_workspace = (
+            Path(workspace).expanduser().resolve() if workspace else self.workspace
+        )
 
         try:
-            # Build subagent tools (no message tool, no spawn tool)
             tools = ToolRegistry()
-            allowed_dir = self.workspace if self.restrict_to_workspace else None
-            tools.register(ReadFileTool(workspace=self.workspace, allowed_dir=allowed_dir))
-            tools.register(WriteFileTool(workspace=self.workspace, allowed_dir=allowed_dir))
-            tools.register(EditFileTool(workspace=self.workspace, allowed_dir=allowed_dir))
-            tools.register(ListDirTool(workspace=self.workspace, allowed_dir=allowed_dir))
+            allowed_dir = effective_workspace if self.restrict_to_workspace else None
+            tools.register(ReadFileTool(workspace=effective_workspace, allowed_dir=allowed_dir))
+            tools.register(WriteFileTool(workspace=effective_workspace, allowed_dir=allowed_dir))
+            tools.register(EditFileTool(workspace=effective_workspace, allowed_dir=allowed_dir))
+            tools.register(ListDirTool(workspace=effective_workspace, allowed_dir=allowed_dir))
             tools.register(
                 ExecTool(
-                    working_dir=str(self.workspace),
+                    working_dir=str(effective_workspace),
                     timeout=self.exec_config.timeout,
                     restrict_to_workspace=self.restrict_to_workspace,
                     path_append=self.exec_config.path_append,
@@ -169,7 +177,7 @@ class SubagentManager:
             )
             tools.register(WebFetchTool(proxy=self.web_proxy))
 
-            system_prompt = self._build_subagent_prompt()
+            system_prompt = self._build_subagent_prompt(effective_workspace)
             messages: list[dict[str, Any]] = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": task},
@@ -320,11 +328,12 @@ Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not men
             "Subagent [{}] announced result to {}:{}", task_id, origin["channel"], origin["chat_id"]
         )
 
-    def _build_subagent_prompt(self) -> str:
+    def _build_subagent_prompt(self, workspace: Path | None = None) -> str:
         """Build a focused system prompt for the subagent."""
         from nanobot.agent.context import ContextBuilder
         from nanobot.agent.skills import SkillsLoader
 
+        effective_workspace = workspace or self.workspace
         time_ctx = ContextBuilder._build_runtime_context(None, None)
         parts = [
             f"""# Subagent
@@ -335,10 +344,10 @@ You are a subagent spawned by the main agent to complete a specific task.
 Stay focused on the assigned task. Your final response will be reported back to the main agent.
 
 ## Workspace
-{self.workspace}"""
+{effective_workspace}"""
         ]
 
-        skills_summary = SkillsLoader(self.workspace).build_skills_summary()
+        skills_summary = SkillsLoader(effective_workspace).build_skills_summary()
         if skills_summary:
             parts.append(
                 f"## Skills\n\nRead SKILL.md with read_file to use a skill.\n\n{skills_summary}"

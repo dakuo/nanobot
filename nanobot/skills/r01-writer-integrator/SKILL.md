@@ -33,6 +33,7 @@ Unify domain drafts into one coherent NIH R01 narrative with a single voice, con
 4. Merge duplicated background into concise shared paragraphs.
 5. Ensure each aim includes HCI, healthcare, and AI contributions.
 6. Validate all cross-references to figures, budget, and milestones.
+7. **Team prior work validation**: After assembly, scan `literature/references.json` for all entries with `team_prior_work: true`. Verify that each is cited at least once in the merged document. If any team publication is absent, insert it in the most relevant section (Significance or the aim matching its domain). NIH reviewers will score the Investigator criterion poorly if the team's own track record is not demonstrated through self-citation.
 
 # 3-Pass Outline Refinement
 When invoked during the outline phase (Phase 4), use this structure-then-fill approach before dispatching any writer.

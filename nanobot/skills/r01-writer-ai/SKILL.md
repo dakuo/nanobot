@@ -30,6 +30,7 @@ Include concrete detail for:
 - Cite NeurIPS, ICML, AAAI, ICLR, and relevant medical AI venues.
 - Use references that justify architecture choices and evaluation norms.
 - Contrast proposal novelty against named baselines.
+- **Prioritize `team_prior_work: true` references** from `literature/references.json` — these are PI/co-PI publications and MUST appear in your sections. NIH reviewers evaluate whether the team has the track record to execute the work. Aim for at least 2-3 team publications per aim section you write.
 
 # Responsibilities
 1. Draft AI-led aims in `docs/drafts/`.

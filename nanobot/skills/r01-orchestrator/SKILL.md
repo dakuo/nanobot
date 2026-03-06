@@ -17,6 +17,7 @@ The orchestrator drives a state-machine pipeline that reads `state.json`, determ
 | init | orchestrator |
 | metadata | orchestrator (interactive) → `r01-foa-finder` (if NIH context missing) |
 | ideation | `r01-ideation` → `r01-novelty-checker` (sub-step) |
+| investigator verification | orchestrator (blocking gate — verify all PIs findable before literature) |
 | literature | `r01-literature` × 3 (parallel: hci, healthcare, ai) → merge |
 | outline | `r01-writer-integrator` |
 | writing | `r01-writer-integrator` + domain writers |
@@ -49,6 +50,31 @@ If all metadata is already present in `project.yaml`, this phase auto-completes 
 
 See `references/pipeline.md` Phase 1.5 for the full specification.
 
+# Investigator Verification Gate (Phase 2.5 — between ideation and literature)
+
+**BLOCKING GATE**: Do NOT start literature search until all investigators are verified. Literature agents need investigator names, institutions, and ideally scholar_ids/ORCIDs to search for team publications effectively. Missing or incorrect PI info wastes entire literature search cycles.
+
+## Verification checks (run after ideation completes, before literature dispatch):
+1. **For each investigator** in `project.yaml.investigators` (PI + all co-PIs):
+   - `name` is present and non-null.
+   - `institution` is present and non-null.
+   - `expertise` has at least 1 entry.
+   - `scholar_id` (Google Scholar ID or ORCID) is present. If missing, **ask the user** for it. Explain: "I need scholar IDs to find each investigator's publications for citation. This significantly improves literature search quality."
+2. **Verify each investigator is findable**: For each investigator, run a quick web search (`web_search(query="{name}" {institution})`) to confirm they exist at that institution. If no match is found:
+   - Ask the user: "I couldn't verify {name} at {institution}. Could you confirm the correct name/affiliation or provide their ORCID?"
+   - Do NOT proceed to literature search with unverified investigators.
+3. **Record verification** in `state.json`:
+   ```json
+   "investigator_verification": {
+     "pi": {"verified": true, "scholar_id": "...", "method": "orcid_lookup"},
+     "co_pi_1": {"verified": true, "scholar_id": "...", "method": "web_search"},
+     "co_pi_2": {"verified": false, "issue": "not_found_at_institution", "awaiting_user": true}
+   }
+   ```
+4. **Only proceed to Phase 3 (literature)** when all investigators have `verified: true`.
+
+This gate prevents the failure mode where literature agents spend their entire budget on domain queries without finding any PI publications.
+
 # Ideation Flow (Phase 2)
 The orchestrator first determines the ideation mode:
 - **Express mode**: If `project.yaml` contains aims with descriptions and the user provided a complete concept. Spawn ideation agent with "Use express mode."
@@ -68,7 +94,9 @@ After FILTER, the orchestrator spawns `r01-novelty-checker` as a sub-step. The n
 2. Populate `state.json.literature_parallel` with one entry per domain.
 3. Spawn 3 literature subagents with **30-second stagger** between launches to avoid API rate limits (Semantic Scholar: 10 req/5min without key; PubMed E-utilities: 3 req/10s):
    - Each reads `r01-literature` skill and is assigned one domain: `hci`, `healthcare`, or `ai`.
+   - **CRITICAL**: Pass `workspace` parameter pointing to the project directory so relative file paths resolve correctly:
    - Task prompt: "You are the {domain} literature agent. Read the r01-literature skill at {skill_path} and follow its instructions. Your domain assignment is: {domain}. Project path: ~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/. Find 10-18 references for the {domain} domain. Use citation graph traversal and iterative query refinement as specified in the skill. Write to literature/references_{domain}.json and literature/gaps_{domain}.md."
+   - Spawn call: `spawn(task=..., label="lit-{domain}", max_iterations=30, model=..., workspace="~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/")`
    - Each agent runs multi-round search (up to 3 rounds), snowball sampling via Semantic Scholar citation graph, and produces claim-evidence mappings, contradiction detection, and evidence synthesis tables.
 4. Track completion by updating `state.json.literature_parallel.{domain}.status`.
 5. When all 3 domain searches complete:
@@ -96,12 +124,13 @@ Instead of separate spawns per section, batch into **1 integrator + N aim batche
 4. Call `spawn` simultaneously for batch A + N aim batches, each with:
    - `max_iterations=30` (writers need headroom for reading inputs + drafting)
    - `model` from `project.yaml.model_config.overrides` for the assigned skill
+   - `workspace="~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/"` so relative paths in writer skills resolve correctly
 5. As each batch completes, mark its sections `complete` in `state.json.writing_parallel`.
 6. When batch A and all aim batches are `complete`, spawn batch E (assembly).
 7. When batch E completes, mark remaining sections + `writing_integration` as `complete`.
 
 ## Spawn Prompt Template
-Every writer spawn must include ALL of the following in the task string:
+Every writer spawn must include ALL of the following in the task string. Also pass `workspace="~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/"` so the subagent's file tools resolve relative paths against the project directory.
 
 ```
 You are a writing subagent. Read the {skill_name} skill at {skill_path} and follow its instructions.

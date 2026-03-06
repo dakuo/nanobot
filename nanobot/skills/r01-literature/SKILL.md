@@ -16,14 +16,73 @@ You are spawned with a domain assignment in your task description: `hci`, `healt
 - Read prior examples in `~/Dropbox/AgentWorkspace/PriorNIHR01Examples/` for citation style.
 - Write your output to `literature/references_{domain}.json` and `literature/gaps_{domain}.md`.
 
-# PI Publication Awareness
-If `project.yaml.investigators` contains PI or co-investigator entries with `scholar_id` (Google Scholar or ORCID):
-1. Search for the PI's recent publications (last 5 years) using their name and scholar_id.
-2. Identify papers by the PI that are directly relevant to this proposal's domain.
-3. Tag these as `"team_prior_work": true` in the references output.
-4. These papers are automatic `must-cite` candidates — the proposal should reference the team's own prior work to establish credibility and continuity.
-5. If no scholar_id is provided but PI name is available, search Semantic Scholar by name + institution. Accept only high-confidence matches (same institution, same research area).
-Do not fabricate publications. If you cannot find publications for a PI, note this in `gaps_{domain}.md` under a "Team Publications" section.
+# Investigator Publication Search (MANDATORY Step 0 — Run BEFORE Domain Queries)
+
+NIH reviewers evaluate whether the investigative team has the track record to execute the proposed work. Citing the team's own prior publications is **essential** for establishing credibility. This step is NOT optional — it runs before any domain-specific literature search.
+
+## Requirements
+- **Minimum 5 papers per PI** on topics related to the proposal (methods, population, domain, or technology).
+- **Minimum 3 papers per co-PI** on their area of expertise.
+- ALL investigator papers are tagged `"team_prior_work": true` and default to `"priority": "must-cite"`.
+- Search broadly — include the investigator's most-cited works even if not directly on the proposal topic. High-citation foundational papers demonstrate research impact.
+- Expand beyond the last 5 years for foundational or highly-cited works (100+ citations).
+
+## Search Procedure (for EACH investigator in `project.yaml.investigators`)
+
+Read `project.yaml.investigators` to get PI and all co-investigators. For each person:
+
+### 0a. Build investigator search queries
+From each investigator's `name`, `institution`, and `expertise` fields, construct targeted queries:
+- `"{full_name}" {institution}` (broad match)
+- `"{full_name}" {expertise_keyword_1}` (per expertise area)
+- `"{full_name}" {proposal_topic_keyword}` (link to this proposal)
+
+### 0b. Search multiple sources (try ALL, in order)
+Different investigators publish in different venues. Use the right source for each domain:
+
+**For HCI/CS investigators:**
+```
+web_search(query="\"Dakuo Wang\" Northeastern OR IBM conversational AI OR human-AI", count=20)
+web_search(query="\"Dakuo Wang\" site:scholar.google.com", count=10)
+web_search(query="\"Dakuo Wang\" site:dl.acm.org", count=10)
+web_fetch(url="https://api.semanticscholar.org/graph/v1/author/search?query=Dakuo+Wang&fields=name,affiliations,paperCount,citationCount,papers.title,papers.year,papers.venue,papers.citationCount,papers.externalIds", extractMode="text")
+```
+
+**For clinical/healthcare investigators:**
+```
+exec(command="curl -s 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=\"Ko+Daniel\"+Stanford+gastroenterology&retmax=30&retmode=json'")
+web_search(query="\"Daniel Ko\" Stanford gastroenterology colonoscopy site:pubmed.ncbi.nlm.nih.gov", count=15)
+```
+
+**For AI/ML investigators:**
+```
+web_search(query="\"Ping Zhang\" \"Ohio State\" machine learning health informatics", count=15)
+web_search(query="\"Ping Zhang\" OSU AI healthcare site:scholar.google.com", count=10)
+```
+
+Replace the example names above with the actual investigators from `project.yaml`.
+
+If `scholar_id` (Google Scholar ID or ORCID) is provided, use it for more precise lookup:
+```
+web_fetch(url="https://api.semanticscholar.org/graph/v1/author/{scholar_id}?fields=papers.title,papers.year,papers.venue,papers.citationCount,papers.externalIds,papers.abstract", extractMode="text")
+```
+
+### 0c. Select and annotate investigator papers
+From all search results for each investigator:
+1. Pick the **most relevant** papers to this proposal (method overlap, population overlap, technology overlap).
+2. Pick the **most cited** papers to demonstrate research impact (even if tangentially related).
+3. Pick papers that show **domain breadth** — e.g., a PI with both HCI and AI papers shows interdisciplinary strength.
+4. For each selected paper, annotate with the full reference schema (see Step 5) plus `"team_prior_work": true`.
+5. Write a specific `supports_claim` — e.g., "PI Wang's prior work on conversational AI for clinical settings (CHI 2023) demonstrates expertise in the core interaction paradigm proposed in Aim 1."
+
+### 0d. Minimum count enforcement
+After searching, count papers found per investigator:
+- PI: If < 5 papers found, expand search queries (try different name variations, check prior institutions, broaden topic keywords). Do NOT proceed to Step 1 until minimum is met or all search avenues are exhausted.
+- Co-PI: If < 3 papers found, apply the same expansion.
+- If minimum still cannot be met after exhaustive search, document the gap explicitly in `gaps_{domain}.md` and proceed.
+
+### 0e. Cross-domain investigator papers
+If an investigator's paper is relevant to a DIFFERENT domain agent's scope (e.g., the HCI agent finds a PI paper on ML methods), still include it with `"domain": "cross-domain"`. The merge step will handle deduplication.
 
 # Search Strategy — Tool-Level Instructions
 
@@ -174,10 +233,13 @@ For each selected reference, write a structured annotation:
   "limitations": "1-2 sentences on what they didn't do or got wrong",
   "proposal_relevance": "How this connects to our specific aims",
   "supports_claim": "One-sentence proposal claim this reference directly supports",
+  "team_prior_work": false,
   "priority": "must-cite",
   "target_sections": ["significance", "approach_aim1"]
 }
 ```
+
+Set `"team_prior_work": true` for any paper authored by a PI or co-PI listed in `project.yaml.investigators`. These papers are automatic `must-cite` candidates.
 
 Priority levels: `must-cite` (directly supports a claim), `supporting` (adds depth), `optional` (nice-to-have context).
 
@@ -305,6 +367,7 @@ One table per aim. Each table maps the evidence landscape for that aim.
 - Every reference has a DOI or working URL.
 - Every `must-cite` reference directly supports a proposal claim.
 - Every `must-cite` reference has a specific, non-generic `supports_claim` field.
+- **Minimum 5 PI papers and 3 per co-PI** with `team_prior_work: true` across the full reference set.
 - Gap analysis is aim-specific and actionable.
 - Conflicting evidence is identified and addressed (or explicitly noted as absent).
 - Evidence synthesis tables cover all aims with concrete paper-level detail.
@@ -321,3 +384,5 @@ One table per aim. Each table maps the evidence landscape for that aim.
 - Do NOT skip contradiction detection — even if no conflicts are found, state "No conflicting evidence identified" in the output.
 - Do NOT leave evidence synthesis table cells empty — write "Not reported" if the paper does not provide that information.
 - Do NOT hardcode year ranges — use the current date to compute recency windows.
+- Do NOT skip the Investigator Publication Search (Step 0). This is mandatory even when `scholar_id` is missing — fall back to name + institution + expertise keyword searches. An R01 proposal without PI self-citations will be scored poorly on the Investigator criterion.
+- Do NOT mark the literature phase as complete if zero `team_prior_work: true` papers are in the output. Go back and search harder.

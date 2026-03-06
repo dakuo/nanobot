@@ -58,6 +58,10 @@ class SpawnTool(Tool):
                     "type": "string",
                     "description": "LLM model override for this subagent (e.g. 'claude-opus-4-5'). If omitted, uses the default model.",
                 },
+                "workspace": {
+                    "type": "string",
+                    "description": "Working directory override for this subagent. Relative file paths resolve against this directory. Use for project-specific workspaces.",
+                },
             },
             "required": ["task"],
         }
@@ -68,9 +72,9 @@ class SpawnTool(Tool):
         label: str | None = None,
         max_iterations: int | None = None,
         model: str | None = None,
+        workspace: str | None = None,
         **kwargs: Any,
     ) -> str:
-        """Spawn a subagent to execute the given task."""
         return await self._manager.spawn(
             task=task,
             label=label,
@@ -79,4 +83,5 @@ class SpawnTool(Tool):
             session_key=self._session_key,
             max_iterations=max_iterations,
             model=model,
+            workspace=workspace,
         )

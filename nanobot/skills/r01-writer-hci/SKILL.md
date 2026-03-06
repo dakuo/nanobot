@@ -25,6 +25,7 @@ Use and explain when appropriate:
 - Draw from CHI, CSCW, UIST, DIS, and IUI where relevant.
 - Prefer studies with clear method detail and evaluative rigor.
 - Link each citation to a concrete design or evaluation decision.
+- **Prioritize `team_prior_work: true` references** from `literature/references.json` — these are PI/co-PI publications and MUST appear in your sections. NIH reviewers evaluate whether the team has the track record to execute the work. Aim for at least 2-3 team publications per aim section you write.
 
 # Responsibilities
 1. Draft HCI-led aim subsections for Approach documents.
