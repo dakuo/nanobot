@@ -111,6 +111,21 @@ Reply directly with text for conversations. Only use the 'message' tool to send 
 
         return "\n\n".join(parts) if parts else ""
 
+    @staticmethod
+    def _drop_unsupported_media_blocks(content: Any) -> Any:
+        """Remove content blocks that reference unsupported media (e.g. application/pdf)
+        so the API never receives them (avoids AI_UnsupportedFunctionalityError)."""
+        if not isinstance(content, list):
+            return content
+        out = []
+        for block in content:
+            if block.get("type") == "image_url":
+                url = (block.get("image_url") or {}).get("url") or ""
+                if "application/pdf" in url or url.startswith("data:application/"):
+                    continue
+            out.append(block)
+        return out if out != content else content
+
     def build_messages(
         self,
         history: list[dict[str, Any]],
@@ -131,28 +146,48 @@ Reply directly with text for conversations. Only use the 'message' tool to send 
         else:
             merged = [{"type": "text", "text": runtime_ctx}] + user_content
 
+        # Sanitize history so we never send PDF/unsupported media blocks (Bedrock etc. reject them).
+        safe_history = []
+        for msg in history:
+            m = dict(msg)
+            if m.get("role") == "user" and "content" in m:
+                m["content"] = self._drop_unsupported_media_blocks(m["content"])
+            safe_history.append(m)
+
         return [
             {
                 "role": "system",
                 "content": self.build_system_prompt(skill_names, query=current_message),
             },
-            *history,
+            *safe_history,
             {"role": "user", "content": merged},
         ]
 
+    # Media types supported by typical LLM APIs (e.g. Bedrock Claude). PDF is not supported.
+    _SUPPORTED_MEDIA_PREFIX = ("image/",)
+
     def _build_user_content(self, text: str, media: list[str] | None) -> str | list[dict[str, Any]]:
-        """Build user message content with optional base64-encoded images."""
+        """Build user message content with optional base64-encoded images. PDFs and other
+        non-image attachments are skipped and noted in text (API does not support them)."""
         if not media:
             return text
 
         images = []
+        unsupported_names: list[str] = []
         for path in media:
             p = Path(path)
             mime, _ = mimetypes.guess_type(path)
-            if not p.is_file() or not mime or not mime.startswith("image/"):
+            if not p.is_file():
+                continue
+            if not mime or not mime.startswith(self._SUPPORTED_MEDIA_PREFIX):
+                unsupported_names.append(p.name)
                 continue
             b64 = base64.b64encode(p.read_bytes()).decode()
             images.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}})
+
+        if unsupported_names:
+            note = " [Attachments not supported for analysis: " + ", ".join(unsupported_names) + "]"
+            text = (text or "").rstrip() + note
 
         if not images:
             return text
