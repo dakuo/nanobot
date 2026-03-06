@@ -1,27 +1,337 @@
 {
-  "version": 1,
-  "last_updated": null,
+  "version": 2,
+  "last_updated": "2026-03-05T07:00:00Z",
   "description": "Accumulates reviewer feedback patterns across R01 projects. Populated over time as real NIH reviewer feedback is processed. Do not delete entries — append only.",
-  "patterns": [],
-  "common_weaknesses": [],
-  "common_strengths": [],
+  "patterns": [
+    {
+      "id": "pat-001",
+      "source_project": "2024Cardiotoxic",
+      "section": "approach",
+      "reviewer_quote": "The ability to recruit sufficient individuals with severe cardiotoxicity is unclear. Based on a general manuscript about breast cancer cardiovascular disease, an estimate of 20% is given, but it is not clear whether this is true for the local population.",
+      "score_impact": "negative",
+      "criterion_affected": "approach",
+      "category": "feasibility",
+      "frequency": 1,
+      "mitigation": "Provide local epidemiological data supporting incidence rates, not just general literature. Include site-specific data from the clinical partner institution.",
+      "first_seen": "2024-09-26",
+      "last_seen": "2024-09-26"
+    },
+    {
+      "id": "pat-002",
+      "source_project": "2024Cardiotoxic",
+      "section": "approach",
+      "reviewer_quote": "The approach for aggregating data is underspecified and potentially impractical. Sensor data will be fed directly into a server hosted at Wake Forest, but it is unclear whether such a setup has institutional approvals and would be sufficiently secure to protect patient data.",
+      "score_impact": "negative",
+      "criterion_affected": "approach",
+      "category": "data",
+      "frequency": 1,
+      "mitigation": "Provide detailed security architecture diagram showing data flow, encryption, institutional approvals, and HIPAA compliance documentation.",
+      "first_seen": "2024-09-26",
+      "last_seen": "2024-09-26"
+    },
+    {
+      "id": "pat-003",
+      "source_project": "2024Cardiotoxic",
+      "section": "approach",
+      "reviewer_quote": "Aspects of the proposed statistical analysis (e.g., in Aim 2) are underdeveloped.",
+      "score_impact": "negative",
+      "criterion_affected": "approach",
+      "category": "statistics",
+      "frequency": 1,
+      "mitigation": "Expand statistical analysis sections with specific test selections, power calculations, and analysis pipelines. Name exact methods.",
+      "first_seen": "2024-09-26",
+      "last_seen": "2024-09-26"
+    },
+    {
+      "id": "pat-004",
+      "source_project": "2024Cardiotoxic",
+      "section": "approach",
+      "reviewer_quote": "The proposed methods are not being externally validated.",
+      "score_impact": "negative",
+      "criterion_affected": "approach",
+      "category": "rigor",
+      "frequency": 1,
+      "mitigation": "Add explicit external validation plan: different institution, different time period, or both. Specify the external dataset and validation protocol.",
+      "first_seen": "2024-09-26",
+      "last_seen": "2024-09-26"
+    },
+    {
+      "id": "pat-005",
+      "source_project": "2024Cardiotoxic",
+      "section": "approach",
+      "reviewer_quote": "There are possible privacy concerns related to the use of Amazon Echo for healthcare tasks. It doesn't appear that this is directly discussed in the grant application. They reference HIPAA compliance for their LLM methods, but it isn't entirely clear this is sufficient.",
+      "score_impact": "negative",
+      "criterion_affected": "approach",
+      "category": "data",
+      "frequency": 1,
+      "mitigation": "Justify technology choices (commercial devices, cloud services) with explicit HIPAA compliance documentation. Address corporate trust concerns proactively.",
+      "first_seen": "2024-09-26",
+      "last_seen": "2024-09-26"
+    },
+    {
+      "id": "pat-006",
+      "source_project": "2024Cardiotoxic",
+      "section": "approach",
+      "reviewer_quote": "In Aim 1, how LLM-based consolidation module is developed is vague, e.g., what foundation model is used, and any fine-tuning or instruction tuning is involved. It is not clear how anonymization (de-identification) is done.",
+      "score_impact": "negative",
+      "criterion_affected": "approach",
+      "category": "methods",
+      "frequency": 1,
+      "mitigation": "Name exact foundation model, specify fine-tuning strategy, describe de-identification algorithm with compliance standard.",
+      "first_seen": "2024-09-26",
+      "last_seen": "2024-09-26"
+    },
+    {
+      "id": "pat-007",
+      "source_project": "2024Cardiotoxic",
+      "section": "approach",
+      "reviewer_quote": "Even with verified external knowledge base, hallucination may still occur. It needs to be properly managed as it directly interacts with the patients.",
+      "score_impact": "negative",
+      "criterion_affected": "approach",
+      "category": "methods",
+      "frequency": 1,
+      "mitigation": "Address LLM hallucination explicitly: describe guardrails, output verification, human-in-the-loop review, and safety protocols for patient-facing AI.",
+      "first_seen": "2024-09-26",
+      "last_seen": "2024-09-26"
+    },
+    {
+      "id": "pat-008",
+      "source_project": "2024Cardiotoxic",
+      "section": "significance",
+      "reviewer_quote": "It is less clear how more information about potential cardiac risk would change either initial cancer treatment or follow-up care, since treatment decisions are already focused on maximum cancer benefit and minimum short and long-term toxicities.",
+      "score_impact": "negative",
+      "criterion_affected": "significance",
+      "category": "significance",
+      "frequency": 1,
+      "mitigation": "Explicitly map how AI predictions change specific clinical decisions. Provide a decision tree or workflow diagram showing actionable intervention points.",
+      "first_seen": "2024-09-26",
+      "last_seen": "2024-09-26"
+    },
+    {
+      "id": "pat-009",
+      "source_project": "2024Cardiotoxic",
+      "section": "approach",
+      "reviewer_quote": "The patient numbers are modest and the inclusion criteria very broad, by age, and treatment received, with concerns that there will be too much heterogeneity to draw valid conclusions.",
+      "score_impact": "negative",
+      "criterion_affected": "approach",
+      "category": "statistics",
+      "frequency": 1,
+      "mitigation": "Narrow inclusion criteria or stratify analyses by key confounders (age, comorbidity, treatment type). Provide power calculations for subgroups.",
+      "first_seen": "2024-09-26",
+      "last_seen": "2024-09-26"
+    },
+    {
+      "id": "pat-010",
+      "source_project": "2024Cardiotoxic",
+      "section": "approach",
+      "reviewer_quote": "The timeline likely underestimates the time/effort required to accomplish all of the proposed aspects.",
+      "score_impact": "negative",
+      "criterion_affected": "approach",
+      "category": "feasibility",
+      "frequency": 1,
+      "mitigation": "Build 20-30% buffer into timeline. Show Gantt chart with critical path. Include contingency plans for delays in recruitment, IRB, or data access.",
+      "first_seen": "2024-09-26",
+      "last_seen": "2024-09-26"
+    }
+  ],
+  "common_weaknesses": [
+    {
+      "id": "weak-001",
+      "description": "Recruitment feasibility not supported by local epidemiological data",
+      "section": "approach",
+      "frequency_across_projects": 1,
+      "prevention_strategy": "Always include site-specific incidence data, not just general literature estimates. Obtain letters of support from clinical partners with enrollment commitments.",
+      "example_reviewer_language": [
+        "The ability to recruit sufficient individuals is unclear",
+        "It is not clear whether this is true for the local population"
+      ]
+    },
+    {
+      "id": "weak-002",
+      "description": "Data security architecture underspecified for sensitive health data",
+      "section": "approach",
+      "frequency_across_projects": 1,
+      "prevention_strategy": "Include data flow diagram showing encryption, storage, access controls, and institutional approvals. Address commercial device privacy (Alexa, Garmin, etc.) proactively.",
+      "example_reviewer_language": [
+        "It is unclear whether such a setup has institutional approvals and would be sufficiently secure",
+        "There are possible privacy concerns related to the use of Amazon Echo for healthcare tasks"
+      ]
+    },
+    {
+      "id": "weak-003",
+      "description": "External validation missing from AI model evaluation plan",
+      "section": "approach",
+      "frequency_across_projects": 1,
+      "prevention_strategy": "Add explicit external validation on data from a different institution or time period. If not feasible, address limitations transparently and propose temporal validation.",
+      "example_reviewer_language": [
+        "The proposed methods are not being externally validated"
+      ]
+    },
+    {
+      "id": "weak-004",
+      "description": "LLM implementation details vague (foundation model, fine-tuning, de-identification, hallucination management)",
+      "section": "approach",
+      "frequency_across_projects": 1,
+      "prevention_strategy": "Name exact model version, hosting (self-hosted vs. cloud, HIPAA compliance), fine-tuning strategy, de-identification method, hallucination guardrails, and safety protocols.",
+      "example_reviewer_language": [
+        "How LLM-based consolidation module is developed is vague",
+        "Hallucination may still occur. It needs to be properly managed"
+      ]
+    },
+    {
+      "id": "weak-005",
+      "description": "Clinical actionability unclear — how predictions change clinical decisions",
+      "section": "significance",
+      "frequency_across_projects": 1,
+      "prevention_strategy": "Include a clinical decision workflow diagram showing how AI outputs map to specific intervention points. Consult with clinical collaborators to validate decision pathways.",
+      "example_reviewer_language": [
+        "It is less clear how more information about potential cardiac risk would change either initial cancer treatment or follow-up care"
+      ]
+    }
+  ],
+  "common_strengths": [
+    {
+      "id": "str-001",
+      "description": "Multimodal data integration (EHR + wearables + patient-reported + AI) framed as novel and necessary",
+      "section": "innovation",
+      "frequency_across_projects": 1,
+      "replication_strategy": "Frame innovation as integrating data modalities that are 'entirely missing' from existing models. Emphasize that clinicians already use these modalities informally."
+    },
+    {
+      "id": "str-002",
+      "description": "Strong interdisciplinary team with documented collaboration history",
+      "section": "approach",
+      "frequency_across_projects": 1,
+      "replication_strategy": "Name team members with specific expertise. Quantify collaboration history ('more than three years'). Reference joint publications or prior funded projects."
+    },
+    {
+      "id": "str-003",
+      "description": "Innovative use of LLMs and voice assistants for patient engagement",
+      "section": "innovation",
+      "frequency_across_projects": 1,
+      "replication_strategy": "Position LLM use as enabling something previously impossible (natural conversation, automated symptom extraction). Cite the specific capability gap LLMs fill."
+    },
+    {
+      "id": "str-004",
+      "description": "Human-centered AI design philosophy explicitly stated and grounded in theory",
+      "section": "approach",
+      "frequency_across_projects": 1,
+      "replication_strategy": "Frame AI design around clinical workflow analysis, not algorithmic capability. Reference HCAI principles. Include participatory design with all stakeholder groups."
+    },
+    {
+      "id": "str-005",
+      "description": "Preliminary data demonstrates technical feasibility of proposed pipeline",
+      "section": "approach",
+      "frequency_across_projects": 1,
+      "replication_strategy": "Show pilot results for key technical components. Include figures of preliminary model performance. Reference existing infrastructure (deployed platforms, prior studies)."
+    }
+  ],
   "domain_specific": {
     "hci": {
-      "patterns": [],
-      "common_issues": []
+      "patterns": [
+        {
+          "id": "hci-001",
+          "description": "Participatory design with diverse stakeholders including patients",
+          "score_impact": "positive",
+          "example": "Expert advisory panel includes a patient representative",
+          "frequency": 1
+        }
+      ],
+      "common_issues": [
+        "Ensure PD sessions include patient/end-user representatives, not just clinicians"
+      ]
     },
     "healthcare": {
-      "patterns": [],
-      "common_issues": []
+      "patterns": [
+        {
+          "id": "hc-001",
+          "description": "Treatment heterogeneity creates analytical challenges",
+          "score_impact": "negative",
+          "example": "The treatments described have a diverse set of cardiac effects, including very different timelines for their occurrence",
+          "frequency": 1
+        },
+        {
+          "id": "hc-002",
+          "description": "EHR data quality and curation must be explicitly addressed",
+          "score_impact": "negative",
+          "example": "EHR is notoriously difficult to mine. It is not clear what the investigators mean by 'curated' EHR data",
+          "frequency": 1
+        }
+      ],
+      "common_issues": [
+        "Define 'curated EHR data' with specific quality metrics and missingness thresholds",
+        "Stratify by treatment type when treatments have different mechanisms and timelines",
+        "Address HIPAA compliance for all data sources including commercial devices"
+      ]
     },
     "ai": {
-      "patterns": [],
-      "common_issues": []
+      "patterns": [
+        {
+          "id": "ai-001",
+          "description": "RAG knowledge base curation criteria must be specified",
+          "score_impact": "negative",
+          "example": "The proposal didn't describe steps or what criteria to use when compiling verified external knowledge base",
+          "frequency": 1
+        },
+        {
+          "id": "ai-002",
+          "description": "LLM hallucination management is mandatory for patient-facing systems",
+          "score_impact": "negative",
+          "example": "Even with verified external knowledge base, hallucination may still occur. It needs to be properly managed",
+          "frequency": 1
+        },
+        {
+          "id": "ai-003",
+          "description": "Real-time risk scoring must be aligned with model training/update process",
+          "score_impact": "negative",
+          "example": "It is not clear how practical it is to adjust the real-time risk if new non-clinical health data is added at any time",
+          "frequency": 1
+        }
+      ],
+      "common_issues": [
+        "Specify foundation model name and version",
+        "Address hallucination guardrails for patient-facing AI",
+        "Describe RAG knowledge base curation and verification process",
+        "Clarify how real-time predictions align with batch model updates"
+      ]
     }
   },
   "scoring_calibration": {
-    "notes": "Will be populated after real NIH reviewer feedback is added",
-    "score_examples": []
+    "notes": "Impact Score 28 (8th percentile) at CIDH study section — funded. Approach received the most critical scores (4 and 6 from two reviewers). Innovation and Team were unanimous strengths.",
+    "score_examples": [
+      {
+        "project": "2024Cardiotoxic",
+        "overall_score": 28,
+        "criterion_scores": {
+          "significance": {"r1": 1, "r2": 3, "r3": 2, "r4": 3},
+          "investigator": {"r1": 1, "r2": 2, "r3": 1, "r4": 3},
+          "innovation": {"r1": 2, "r2": 3, "r3": 3, "r4": 2},
+          "approach": {"r1": 4, "r2": 3, "r3": 3, "r4": 6},
+          "environment": {"r1": 2, "r2": 2, "r3": 1, "r4": 2}
+        },
+        "percentile": 8,
+        "funded": true,
+        "key_reviewer_comments": [
+          "Multimodal data integration is novel and potentially impactful (all 4 reviewers)",
+          "Strong interdisciplinary team with collaboration track record (all 4 reviewers)",
+          "Recruitment feasibility questioned (3/4 reviewers)",
+          "LLM technical details vague — foundation model, fine-tuning, de-identification (2/4 reviewers)",
+          "Privacy concerns with Amazon Echo for healthcare data (2/4 reviewers)",
+          "Clinical actionability unclear — how predictions change treatment decisions (1/4 reviewers, but scored Approach=6)",
+          "External validation missing (1/4 reviewers)",
+          "Statistical analysis underdeveloped (1/4 reviewers)",
+          "HIPAA de-identification process compliance questioned (led to 'UNACCEPTABLE' human subjects flag)"
+        ],
+        "lessons": [
+          "Innovation and team strength can compensate for approach weaknesses — this scored 28 despite one Approach=6",
+          "Privacy/HIPAA concerns are taken very seriously — even minor gaps trigger 'UNACCEPTABLE' flags",
+          "All reviewers valued multimodal integration — frame this as core innovation",
+          "Recruitment feasibility is the most common concern — always provide local data",
+          "LLM-related technical details need to be as specific as traditional ML methods",
+          "Clinical actionability is a potential fatal flaw — map AI outputs to decision points explicitly"
+        ]
+      }
+    ]
   },
   "schema": {
     "pattern_entry": {
