@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "last_updated": null,
+  "description": "PI research taste profile. Populated over time by the ideation agent based on user selections and explicit preferences. Read by r01-ideation and r01-novelty-checker to bias idea generation toward the PI's preferred research directions. Do not delete entries — append and update only.",
+
+  "hypothesis_framing": {
+    "preferences": [],
+    "description": "Preferred hypothesis types. Examples: 'mechanistic' (test a causal pathway), 'implementation' (deploy and evaluate), 'evaluation' (measure outcomes), 'comparative-effectiveness' (head-to-head comparison). Populated after the PI selects ideas across 2+ projects.",
+    "schema": {
+      "type": "string enum: mechanistic | implementation | evaluation | comparative-effectiveness | mixed-methods",
+      "weight": "float 0-1, higher = stronger preference"
+    }
+  },
+
+  "methodological_tendency": {
+    "preferred_designs": [],
+    "avoided_designs": [],
+    "description": "Study design preferences inferred from idea selections and explicit feedback. preferred_designs: designs the PI gravitates toward. avoided_designs: designs the PI consistently rejects.",
+    "schema": {
+      "design": "string — e.g., 'RCT', 'quasi-experimental', 'mixed-methods', 'participatory-design', 'retrospective-cohort', 'prospective-validation'",
+      "evidence": "string — which project selections or feedback support this preference"
+    }
+  },
+
+  "risk_appetite": {
+    "level": null,
+    "description": "How willing the PI is to propose high-risk aims. null = not yet calibrated. Scale: 'conservative' (safe, incremental), 'moderate' (balanced risk/reward), 'aggressive' (high-risk-high-reward, tolerates novel_with_differentiation novelty verdicts). Inferred from selection patterns — does the PI pick the safe option or the bold one?",
+    "evidence": [],
+    "schema": {
+      "level": "string enum: conservative | moderate | aggressive | null",
+      "evidence_entry": "string — project name + selection context supporting this calibration"
+    }
+  },
+
+  "topic_preferences": {
+    "preferred_themes": [],
+    "avoided_themes": [],
+    "description": "Research themes the PI gravitates toward or avoids. Populated from selection patterns and explicit statements. Examples of themes: 'alert fatigue', 'shared decision-making', 'health equity', 'wearable monitoring', 'NLP on clinical notes', 'patient self-management'.",
+    "schema": {
+      "theme": "string — topic keyword or phrase",
+      "weight": "float 0-1 — strength of preference",
+      "evidence": "string — which selections or feedback support this"
+    }
+  },
+
+  "scope_preference": {
+    "preferred_aim_count": null,
+    "aim_independence": null,
+    "description": "Structural preferences for proposal architecture. preferred_aim_count: 2-4 (null = no preference). aim_independence: 'sequential' (aims build on each other), 'parallel' (aims can proceed independently), 'mixed' (some sequential, some parallel), null = no preference. Used by novelty checker to flag branches that don't match.",
+    "schema": {
+      "preferred_aim_count": "int 2-4 or null",
+      "aim_independence": "string enum: sequential | parallel | mixed | null"
+    }
+  },
+
+  "selection_history": [],
+  "selection_history_schema": {
+    "project": "string — project folder name",
+    "timestamp": "ISO 8601 datetime",
+    "branches_presented": "int — number of branches offered to user",
+    "selected_branch_id": "string — id of the branch the user chose",
+    "rejected_branch_ids": ["string — ids of branches not chosen"],
+    "rejection_reasons": {
+      "description": "Per-branch rejection reasons if user provided them, otherwise null",
+      "schema": {"branch_id": "string", "reason": "string or null"}
+    },
+    "modifications_requested": "string or null — changes the user requested before confirming selection"
+  },
+
+  "auto_update_rules": {
+    "description": "Rules for when the ideation agent should auto-update preference fields based on selection_history patterns.",
+    "rules": [
+      {
+        "trigger": "3+ selections show consistent pattern in methodological approach",
+        "action": "Update methodological_tendency.preferred_designs or avoided_designs",
+        "notification": "Flag to user: 'I noticed you consistently prefer X — I've added this to your ideation preferences.'"
+      },
+      {
+        "trigger": "3+ selections show consistent risk level choice",
+        "action": "Update risk_appetite.level",
+        "notification": "Flag to user: 'Based on your selections, your risk appetite appears to be X.'"
+      },
+      {
+        "trigger": "3+ rejections cite similar theme or approach",
+        "action": "Update topic_preferences.avoided_themes",
+        "notification": "Flag to user: 'I noticed you consistently avoid X — I've added this to your avoided themes.'"
+      }
+    ]
+  }
+}
