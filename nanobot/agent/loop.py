@@ -58,6 +58,7 @@ class AgentLoop:
         memory_window: int = 100,
         reasoning_effort: str | None = None,
         brave_api_key: str | None = None,
+        exa_api_key: str | None = None,
         web_proxy: str | None = None,
         exec_config: ExecToolConfig | None = None,
         cron_service: CronService | None = None,
@@ -80,6 +81,7 @@ class AgentLoop:
         self.memory_window = memory_window
         self.reasoning_effort = reasoning_effort
         self.brave_api_key = brave_api_key
+        self.exa_api_key = exa_api_key
         self.web_proxy = web_proxy
         self.exec_config = exec_config or ExecToolConfig()
         self.cron_service = cron_service
@@ -97,13 +99,14 @@ class AgentLoop:
             max_tokens=self.max_tokens,
             reasoning_effort=reasoning_effort,
             brave_api_key=brave_api_key,
+            exa_api_key=exa_api_key,
             web_proxy=web_proxy,
             exec_config=self.exec_config,
             restrict_to_workspace=restrict_to_workspace,
         )
 
         self._running = False
-        self._mcp_servers = mcp_servers or {}
+        self._mcp_servers = self._with_builtin_mcps(mcp_servers or {})
         self._mcp_stack: AsyncExitStack | None = None
         self._mcp_connected = False
         self._mcp_connecting = False
@@ -115,6 +118,19 @@ class AgentLoop:
         self._active_tasks: dict[str, list[asyncio.Task]] = {}  # session_key -> tasks
         self._processing_lock = asyncio.Lock()
         self._register_default_tools()
+
+    @staticmethod
+    def _with_builtin_mcps(user_mcps: dict) -> dict:
+        """Merge built-in MCP servers (Context7, Grep.app) with user config.
+        User config overrides builtins. Set url="" to disable a builtin."""
+        from nanobot.config.schema import MCPServerConfig
+
+        builtins = {
+            "context7": MCPServerConfig(url="https://mcp.context7.com/mcp", tool_timeout=30),
+            "grep_app": MCPServerConfig(url="https://mcp.grep.app", tool_timeout=30),
+        }
+        builtins.update(user_mcps)
+        return builtins
 
     def _register_default_tools(self) -> None:
         """Register the default set of tools."""
@@ -129,7 +145,11 @@ class AgentLoop:
                 path_append=self.exec_config.path_append,
             )
         )
-        self.tools.register(WebSearchTool(api_key=self.brave_api_key, proxy=self.web_proxy))
+        self.tools.register(
+            WebSearchTool(
+                api_key=self.brave_api_key, exa_api_key=self.exa_api_key, proxy=self.web_proxy
+            )
+        )
         self.tools.register(WebFetchTool(proxy=self.web_proxy))
         self.tools.register(MessageTool(send_callback=self.bus.publish_outbound))
         self.tools.register(SpawnTool(manager=self.subagents))

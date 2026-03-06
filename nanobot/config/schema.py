@@ -321,6 +321,7 @@ class WebSearchConfig(Base):
     """Web search tool configuration."""
 
     api_key: str = ""  # Brave Search API key
+    exa_api_key: str = ""  # Exa API key (used when Brave key absent)
     max_results: int = 5
 
 
