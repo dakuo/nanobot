@@ -81,8 +81,9 @@ class SlackChannel(BaseChannel):
             slack_meta = msg.metadata.get("slack", {}) if msg.metadata else {}
             thread_ts = slack_meta.get("thread_ts")
             channel_type = slack_meta.get("channel_type")
-            # Only reply in thread for channel/group messages; DMs don't use threads
-            use_thread = thread_ts and channel_type != "im"
+            user_in_thread = slack_meta.get("user_in_thread", False)
+            # Reply in thread for channel/group messages, or DMs when user is in a thread
+            use_thread = thread_ts and (channel_type != "im" or user_in_thread)
             thread_ts_param = thread_ts if use_thread else None
 
             if msg.content:
@@ -114,9 +115,7 @@ class SlackChannel(BaseChannel):
             return
 
         # Acknowledge right away
-        await client.send_socket_mode_response(
-            SocketModeResponse(envelope_id=req.envelope_id)
-        )
+        await client.send_socket_mode_response(SocketModeResponse(envelope_id=req.envelope_id))
 
         payload = req.payload or {}
         event = payload.get("event") or {}
@@ -164,12 +163,15 @@ class SlackChannel(BaseChannel):
         if not self._is_allowed(sender_id, chat_id, channel_type):
             return
 
-        should_respond = channel_type == "im" or self._should_respond_in_channel(event_type, text, chat_id)
+        should_respond = channel_type == "im" or self._should_respond_in_channel(
+            event_type, text, chat_id
+        )
         context_only = not should_respond
 
         text = self._strip_bot_mention(text)
 
         thread_ts = event.get("thread_ts")
+        user_in_thread = thread_ts is not None
         if self.config.reply_in_thread and not thread_ts:
             thread_ts = event.get("ts")
 
@@ -184,9 +186,9 @@ class SlackChannel(BaseChannel):
             except Exception as e:
                 logger.debug("Slack reactions_add failed: {}", e)
 
-        # mpim uses channel-scoped session (like DMs) — all messages share one session
+        # Thread-scoped sessions: DM threads get isolated context, main DM shares one session
         if channel_type in ("im", "mpim"):
-            session_key = None
+            session_key = f"slack_{chat_id}_{event.get('thread_ts')}" if user_in_thread else None
         else:
             session_key = f"slack:{chat_id}:{thread_ts}" if thread_ts else None
 
@@ -195,6 +197,7 @@ class SlackChannel(BaseChannel):
                 "event": event,
                 "thread_ts": thread_ts,
                 "channel_type": channel_type,
+                "user_in_thread": user_in_thread,
             },
         }
         if context_only:
@@ -290,4 +293,3 @@ class SlackChannel(BaseChannel):
             if parts:
                 rows.append(" · ".join(parts))
         return "\n".join(rows)
-
