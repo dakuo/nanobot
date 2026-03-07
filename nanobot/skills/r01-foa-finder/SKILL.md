@@ -143,6 +143,13 @@ No authentication required. Extract:
 - Review criteria (if specified)
 - Clinical trial requirements
 
+**Budget extraction** is critical — reviewers and PIs need to know the funding limits upfront:
+- Look for "Award Ceiling", "Award Floor", "Anticipated Number of Awards", "Estimated Total Program Funding" in the FOA text
+- For modular budgets (most R01s): the standard ceiling is $250,000/module, max $500,000/year direct costs
+- For targeted RFAs: budget limits may differ significantly (some cap at $300K/year, others allow $750K+)
+- For Parent R01 (PA-25-301/302/303): standard R01 limits apply ($500K/year direct costs; requests exceeding this require prior IC approval)
+- Record both the annual direct cost ceiling AND total project period budget when available
+
 Evaluate fit: Does the FOA scope match the project's specific aims? Are there eligibility restrictions that disqualify the PI or institution?
 
 ### 3b: Parent R01 Fallback
@@ -270,6 +277,7 @@ Generated: {date}
 - Recommended IC: {IC name and code}
 - Recommended FOA: {FOA number and title}
 - Clinical Trial Status: {classification} -> {Parent R01 variant if applicable}
+- **Budget**: {annual direct cost ceiling} / {total project period ceiling if specified} (or "Standard R01: $500K/year direct costs" for Parent R01)
 - Target Deadline: {date}
 - Key Program Officer: {name, IC}
 
@@ -296,6 +304,8 @@ Generated: {date}
 - **Title**: {full title}
 - **Type**: {Targeted PAR/RFA or Parent R01}
 - **Clinical trial status**: {not_allowed/optional/required}
+- **Budget ceiling**: {annual direct cost ceiling, e.g., "$500,000/year direct costs" or "$250,000/year for R21-like" or "See FOA Section II.2 for modular budget details"}
+- **Total project period budget**: {if specified in FOA, e.g., "$2,500,000 total over 5 years"; otherwise "Not specified — standard R01 limits apply"}
 - **Close date**: {date or "Open — standard receipt dates apply"}
 - **Rationale**: {2-3 sentences on why this FOA is the best fit}
 
@@ -305,9 +315,9 @@ Generated: {date}
 - **Parent R01 mapping**: {PA-25-301/302/303}
 
 ### Alternative FOAs Considered
-| FOA Number | Title | IC | Close Date | Fit Assessment |
-|------------|-------|----|------------|----------------|
-| ... | ... | ... | ... | ... |
+| FOA Number | Title | IC | Budget Ceiling | Close Date | Fit Assessment |
+|------------|-------|----|----------------|------------|----------------|
+| ... | ... | ... | ... | ... | ... |
 
 ## Relevant Highlighted Topics
 - {Topic name}: {1-2 sentences on alignment with project}
@@ -337,19 +347,24 @@ nih_context:
   foa:
     number: "{FOA number}"
     title: "{FOA title}"
+    type: "{PA|PAR|PAS|RFA}"
     clinical_trial_status: "{status}"
+    budget_ceiling: {annual direct cost ceiling as integer, e.g., 500000}
+    budget_floor: {annual direct cost floor as integer, or null}
+    budget_url: "{URL to FOA budget section, or null}"
   program_officer:
     name: "{PO name}"
     ic: "{PO IC}"
-  submission:
-    target_deadline: "{YYYY-MM-DD}"
-    cycle: "{standard|foa-specific}"
+submission:
+  target_deadline: "{YYYY-MM-DD}"
+  cycle: "{standard|foa-specific}"
 ```
 *These updates are recommendations. The orchestrator will present them for PI confirmation before applying.*
 ```
 
 # Quality Bar
 - Every IC recommendation is backed by evidence: funded project examples from NIH Reporter and/or active FOAs from Grants.gov.
+- **Budget ceiling is stated for every FOA recommendation** — for Parent R01s, state the standard $500K/year direct cost limit; for targeted FOAs, extract the specific ceiling from the FOA text.
 - Clinical trial classification correctly maps to the appropriate Parent R01 variant (PA-25-301/302/303).
 - Program Officers are sourced from recent (last 2 FY) NIH Reporter data on the recommended IC.
 - Submission timeline is accurate based on the current date and standard R01 receipt dates (Feb 5, Jun 5, Oct 5).

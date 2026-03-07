@@ -10,6 +10,7 @@ Generate a defensible NIH R01 budget package with transparent line items and jus
 - Read all budget parameters from `project.yaml`.
 - Read `project.yaml.investigators` for PI, co-investigator, and key personnel roster (names, roles, effort percentages, institutions). Use these to generate the personnel section with real names and roles rather than generic placeholders.
 - Read `project.yaml.submission.budget_period_years` for the grant duration (default 5 years).
+- Read `project.yaml.nih_context.foa.budget_ceiling` for the annual direct cost ceiling. If set, this is a **hard constraint** — annual direct costs MUST NOT exceed this value. If null, use the standard R01 modular budget ceiling of $500,000/year direct costs. Flag any budget that approaches within 5% of the ceiling.
 - Read scope, milestones, and staffing assumptions from `docs/`.
 - Read any existing budget artifacts in `budget/` before updating.
 
@@ -60,6 +61,7 @@ Produce modular categories:
 
 # Validation Checklist
 - Totals are arithmetically consistent.
+- **Annual direct costs do not exceed `budget_ceiling` from project.yaml** (default $500K for standard R01). If they do, flag specific line items to reduce and provide alternatives.
 - Costs align with proposed methods and timeline.
 - Staffing levels match claimed workload.
 - Participant and safety-related costs are not under-scoped.
