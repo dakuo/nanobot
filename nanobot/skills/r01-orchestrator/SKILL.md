@@ -98,8 +98,12 @@ After FILTER, the orchestrator spawns `r01-novelty-checker` as a sub-step. The n
    - Task prompt: "You are the {domain} literature agent. Read the r01-literature skill at {skill_path} and follow its instructions. Your domain assignment is: {domain}. Project path: ~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/. Find 10-18 references for the {domain} domain. IMPORTANT: Run Step 0 (Investigator Publication Search) and Step 0.5 (Seed Reference Ingestion from project.yaml.seed_references) BEFORE domain queries. Use citation graph traversal and iterative query refinement as specified in the skill. Write to literature/references_{domain}.json and literature/gaps_{domain}.md."
    - Spawn call: `spawn(task=..., label="lit-{domain}", max_iterations=30, model=..., workspace="~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/")`
    - Each agent runs multi-round search (up to 3 rounds), snowball sampling via Semantic Scholar citation graph, and produces claim-evidence mappings, contradiction detection, and evidence synthesis tables.
-4. Track completion by updating `state.json.literature_parallel.{domain}.status`.
-5. When all 3 domain searches complete:
+4. **State tracking (MANDATORY — do this for EVERY spawn and retry):**
+   - **Before each spawn**: Read `state.json`, set `literature_parallel.{domain}.status = "running"`, increment `attempt` by 1, write `state.json` back. Append an event: `{"timestamp": ..., "event": "literature_spawn", "domain": "{domain}", "attempt": N}`.
+   - **On agent success**: Set `literature_parallel.{domain}.status = "complete"`, write `state.json`. Append event: `{"timestamp": ..., "event": "literature_complete", "domain": "{domain}", "attempt": N}`.
+   - **On agent failure**: Set `literature_parallel.{domain}.status = "failed"`, write `state.json`. Append event with failure reason: `{"timestamp": ..., "event": "literature_failed", "domain": "{domain}", "attempt": N, "reason": "..."}`.
+   - **Max retries**: If `literature_parallel.{domain}.attempt >= 3` and status is still `"failed"`, do NOT re-spawn. Mark phase as `"blocked"`, append event, and request user intervention. Three failed attempts with the same strategy will not succeed a fourth time.
+5. When all 3 domain searches complete (status = `"complete"` for all domains):
    - Merge `literature/references_hci.json`, `literature/references_healthcare.json`, `literature/references_ai.json` into `literature/references.json`.
    - Deduplicate references (same DOI or URL → keep highest-priority annotation, preserving `supports_claim` fields).
    - Merge `literature/gaps_hci.md`, `literature/gaps_healthcare.md`, `literature/gaps_ai.md` into `literature/gaps.md`, consolidating cross-domain contradictions and evidence synthesis tables.

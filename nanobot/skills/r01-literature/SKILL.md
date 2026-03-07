@@ -83,9 +83,19 @@ web_search(query="\"Daniel Ko\" Stanford gastroenterology colonoscopy site:pubme
 
 **For AI/ML investigators:**
 ```
-web_search(query="\"Ping Zhang\" \"Ohio State\" machine learning health informatics", count=15)
-web_search(query="\"Ping Zhang\" OSU AI healthcare site:scholar.google.com", count=10)
+web_search(query="\"{name}\" \"{institution}\" machine learning {expertise_keyword}", count=15)
+web_search(query="\"{name}\" site:scholar.google.com", count=10)
+web_search(query="\"{name}\" site:arxiv.org {expertise_keyword}", count=15)
+web_search(query="\"{name}\" site:openreview.net", count=10)
+web_fetch(url="https://api.semanticscholar.org/graph/v1/author/search?query={name}&fields=name,affiliations,paperCount,citationCount,papers.title,papers.year,papers.venue,papers.citationCount,papers.externalIds", extractMode="text")
 ```
+Also try the arXiv API directly (independent rate limit from Semantic Scholar):
+```
+web_fetch(url="https://export.arxiv.org/api/query?search_query=au:\"{name}\"&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending", extractMode="text")
+```
+**Note**: Many AI/ML investigators publish at IMWUT, CHI, NeurIPS, ICML, ICLR, AAAI, and on arXiv.
+If initial searches return few results, broaden to `site:dl.acm.org` (for IMWUT/UbiComp) and
+`site:proceedings.neurips.cc` or `site:proceedings.mlr.press` (for NeurIPS/ICML).
 
 Replace the example names above with the actual investigators from `project.yaml`.
 

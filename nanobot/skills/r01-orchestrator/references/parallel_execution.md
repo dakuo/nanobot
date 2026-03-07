@@ -47,6 +47,8 @@ for domain in domains:
     state["literature_parallel"][domain] = {"agent": "r01-literature", "status": "pending", "attempt": 0}
 write_json("state.json", state)
 
+MAX_LITERATURE_RETRIES = 3  # hard cap — same broken strategy won't fix itself
+
 for domain in domains:
     spawn_subagent(
         skill="r01-literature",
@@ -59,12 +61,29 @@ for domain in domains:
             f"Write to literature/references_{domain}.json and literature/gaps_{domain}.md."
         ),
     )
-    mark_status("literature_parallel", domain, "running")
+    state["literature_parallel"][domain]["status"] = "running"
+    state["literature_parallel"][domain]["attempt"] += 1
+    write_json("state.json", state)
+    append_event("state.json", {"event": "literature_spawn", "domain": domain, "attempt": state["literature_parallel"][domain]["attempt"]})
 
 while not all_complete("literature_parallel"):
     update_from_results("literature_parallel")
     if any_failed("literature_parallel"):
-        retry_failed("literature_parallel")
+        for domain, entry in state["literature_parallel"].items():
+            if entry["status"] == "failed":
+                if entry["attempt"] >= MAX_LITERATURE_RETRIES:
+                    entry["status"] = "blocked"
+                    append_event("state.json", {"event": "literature_blocked", "domain": domain, "attempt": entry["attempt"], "reason": "max retries exceeded"})
+                else:
+                    retry_failed("literature_parallel", domain)  # re-spawn only this domain
+                    entry["attempt"] += 1
+                    entry["status"] = "running"
+                    append_event("state.json", {"event": "literature_retry", "domain": domain, "attempt": entry["attempt"]})
+        write_json("state.json", state)
+    if any_blocked("literature_parallel"):
+        mark_phase("literature", "blocked")
+        request_user_intervention("Literature agent(s) failed after max retries. Check events.jsonl for details.")
+        break
 
 # Merge phase: combine domain outputs
 all_refs = []
@@ -266,10 +285,11 @@ else:
 ```
 
 ## Partial Failure Handling
-- If one writer/reviewer fails, keep successful outputs and statuses unchanged.
-- Mark failed task `failed`, increment `attempt`, append structured failure event.
+- If one writer/reviewer/literature agent fails, keep successful outputs and statuses unchanged.
+- Mark failed task `failed`, increment `attempt`, append structured failure event to `events` array in `state.json`.
 - Retry only failed task(s), not the entire parallel batch.
-- If retries exceed configured limit, mark phase blocked and request user intervention.
+- **Max retries per task: 3** (configurable via `MAX_LITERATURE_RETRIES`, `MAX_WRITING_RETRIES`, `MAX_REVIEW_RETRIES`). After 3 failed attempts with the same strategy, mark the task `blocked` and request user intervention — repeating the same approach will not produce a different result.
+- If any task is `blocked`, mark the phase `blocked` and notify the user with the failure reason from `events`.
 
 ## Cost Tracking During Parallel Execution
 - Every subagent completion appends one line to `cost.jsonl` with `timestamp`, `phase`, `agent`, `task`, `attempt`, and `cost`.
