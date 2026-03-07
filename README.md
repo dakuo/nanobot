@@ -18,7 +18,16 @@
 
 📏 Real-time line count: run `bash core_agent_lines.sh` to verify anytime.
 
-## 📢 News
+> **Fork note**: This is a research fork by [Dakuo Wang](https://github.com/dakuow) that adds an [R01 Proposal Multi-Agent System](#r01-proposal-multi-agent-system) on top of the upstream [HKUDS/nanobot](https://github.com/HKUDS/nanobot) codebase.
+
+## 📢 Fork Development Log
+
+- **2026-03-06** Fixed PI publication search bug — literature agents now mandatory-cite 5+ PI papers and 3+ per co-PI. Added investigator verification gate that blocks the pipeline until all PIs are confirmed. Merged upstream HKUDS/nanobot (lazy imports, MCP SSE transport, Telegram streaming, Discord group policy). Generated missing healthcare and AI reference files.
+- **2026-03-05** Built complete R01 multi-agent pipeline with 16 specialized skills. Implemented parallel literature search with citation graph traversal and snowball sampling. Added evolution system for learning from reviewer feedback across projects. Created writing voice calibration and domain-specific style guides. Built reviewer panel simulation with 3 domain reviewers plus panel synthesizer. Added subagent activity dashboard (HTTP API). Pushed 14 atomic commits.
+- **2026-03-04** Added AWS Bedrock provider with env-based auth. Fixed Slack thread handling for DM threads. Implemented Exa search as fallback for Brave Search. Added Anthropic OAuth provider. Fixed media block handling for Bedrock compatibility.
+
+<details>
+<summary>Upstream news (HKUDS/nanobot)</summary>
 
 - **2026-02-28** 🚀 Released **v0.1.4.post3** — cleaner context, hardened session history, and smarter agent. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.4.post3) for details.
 - **2026-02-27** 🧠 Experimental thinking mode support, DingTalk media messages, Feishu and QQ channel fixes.
@@ -32,7 +41,7 @@
 - **2026-02-19** ✨ Slack now sends files, Discord splits long messages, and subagents work in CLI mode.
 
 <details>
-<summary>Earlier news</summary>
+<summary>Earlier upstream news</summary>
 
 - **2026-02-18** ⚡️ nanobot now supports VolcEngine, MCP custom auth headers, and Anthropic prompt caching.
 - **2026-02-17** 🎉 Released **v0.1.4** — MCP support, progress streaming, new providers, and multiple channel improvements. Please see [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.4) for details.
@@ -54,6 +63,8 @@
 
 </details>
 
+</details>
+
 ## Key Features of nanobot:
 
 🪶 **Ultra-Lightweight**: Just ~4,000 lines of core agent code — 99% smaller than Clawdbot.
@@ -69,6 +80,188 @@
 <p align="center">
   <img src="nanobot_arch.png" alt="nanobot architecture" width="800">
 </p>
+
+---
+
+## R01 Proposal Multi-Agent System
+
+This fork adds a complete NIH R01 proposal auto-generation system built on nanobot's subagent infrastructure. Sixteen specialized agents work together in a phased pipeline to produce a full 15-page Research Strategy, Project Summary, Project Narrative, and Budget Justification — targeting human-centered AI research proposals that span HCI, Healthcare, and AI/ML domains.
+
+The system is designed around a real research workflow: the PI interacts at three checkpoints (idea selection, outline review, draft feedback), while agents handle the literature search, writing, review simulation, and revision in parallel. After each project, an evolution agent extracts patterns from reviewer feedback and updates the shared style guides for future runs.
+
+### Pipeline Architecture
+
+```
+                    ┌──────────────────────────────────────┐
+                    │           r01-orchestrator            │
+                    │    State machine + phase dispatch     │
+                    └──────────────────┬───────────────────┘
+                                       │
+          ┌────────────────────────────┼────────────────────────────┐
+          │                            │                            │
+   Phase 1: Init              Phase 1.5: Gate               Phase 2: Ideation
+   Setup workspace            Investigator                  ┌──────────────────┐
+   Load PI profile            Verification                  │   r01-ideation   │
+   Init state.json            (blocks until                 │  Tree-search     │
+                              PIs confirmed)                │  hypothesis gen  │
+                                                            └────────┬─────────┘
+                                                                     │
+                                                            ┌────────▼─────────┐
+                                                            │ r01-novelty-     │
+                                                            │ checker          │
+                                                            │ Multi-round lit  │
+                                                            │ search + overlap │
+                                                            └────────┬─────────┘
+                                                                     │
+                                                         [PI selects idea]
+                                                                     │
+                              Phase 3: Literature (PARALLEL)         │
+          ┌───────────────────────────────────────────────────────── ▼ ──────┐
+          │                          │                          │             │
+  ┌───────┴──────┐          ┌────────┴─────┐          ┌────────┴──────┐      │
+  │ r01-lit-hci  │          │ r01-lit-      │          │ r01-lit-ai    │      │
+  │ ACM DL       │          │ healthcare    │          │ arXiv         │      │
+  │ CHI/CSCW     │          │ PubMed        │          │ Papers w/Code │      │
+  │ snowball     │          │ ClinicalTrials│          │ snowball      │      │
+  └──────┬───────┘          └──────┬────────┘          └──────┬────────┘      │
+         └──────────────────┬──────┘───────────────────────────┘              │
+                            │  Merge + dedup (30-50 refs)                     │
+                            ▼                                                  │
+                   ┌────────────────┐                                          │
+                   │ r01-writer-    │  Phase 4: Outline                        │
+                   │ integrator     │  3-pass skeleton → detail → review       │
+                   └────────┬───────┘                                          │
+                            │  [PI reviews outline]                            │
+                            │                                                  │
+                            │  Phase 5: Writing (PARALLEL)                     │
+          ┌─────────────────┼──────────────────────────────────┐               │
+          │                 │                 │                 │               │
+  ┌───────┴──────┐  ┌───────┴──────┐  ┌──────┴───────┐  ┌─────┴────────┐      │
+  │ r01-writer-  │  │ r01-writer-  │  │ r01-writer-  │  │ r01-writer-  │      │
+  │ hci          │  │ healthcare   │  │ ai           │  │ integrator   │      │
+  │ Aim 1 draft  │  │ Aim 3 draft  │  │ Aim 2 draft  │  │ Significance │      │
+  │ CHI voice    │  │ Clinical     │  │ NeurIPS      │  │ Innovation   │      │
+  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └─────┬────────┘      │
+         └─────────────────┴──────────────────┴────────────────┘               │
+                            │  Assemble research_strategy_v1.md                │
+                            │                                                  │
+                   Phase 6  │                                                  │
+          ┌─────────────────┼──────────────────┐                               │
+          │                                    │                               │
+  ┌───────┴──────┐                    ┌────────┴──────┐                        │
+  │ r01-figures  │                    │ r01-budget    │                        │
+  │ matplotlib   │                    │ NIH format    │                        │
+  │ VLM review   │                    │ 5-year table  │                        │
+  └──────┬───────┘                    └────────┬──────┘                        │
+         └─────────────────┬──────────────────┘                                │
+                           │                                                   │
+                           │  Phase 7: Review (PARALLEL)                       │
+          ┌────────────────┼──────────────────────────────┐                    │
+          │                │                              │                    │
+  ┌───────┴──────┐  ┌──────┴───────┐             ┌───────┴──────┐             │
+  │ r01-reviewer │  │ r01-reviewer │             │ r01-reviewer │             │
+  │ -hci         │  │ -healthcare  │             │ -ai          │             │
+  │ Dual-bias    │  │ Dual-bias    │             │ Dual-bias    │             │
+  │ + reflection │  │ + reflection │             │ + reflection │             │
+  └──────┬───────┘  └──────┬───────┘             └──────┬───────┘             │
+         └─────────────────┴──────────────────────────── ┘                    │
+                           │  (then sequential)                                │
+                  ┌────────▼────────┐                                          │
+                  │ r01-reviewer-   │                                          │
+                  │ panel           │                                          │
+                  │ 4-persona sim   │                                          │
+                  │ Impact score    │                                          │
+                  └────────┬────────┘                                          │
+                           │  score < 5 and rounds remain?                     │
+                           │                                                   │
+                  ┌────────▼────────┐                                          │
+                  │  r01-reviser    │  Phase 8: Revision                       │
+                  │  Diff tracking  │  Self-generated plan                     │
+                  │  Word budget    │  23 priority items                       │
+                  └────────┬────────┘                                          │
+                           │  loop back to Phase 7 if needed                  │
+                           │                                                   │
+                  ┌────────▼────────┐                                          │
+                  │  Export         │  Phase 9: Final assembly                 │
+                  │  research_      │  research_strategy_v2.md                 │
+                  │  strategy_v2.md │  package manifest                        │
+                  └────────┬────────┘                                          │
+                           │                                                   │
+                  ┌────────▼────────┐                                          │
+                  │ r01-evolution   │  Phase 10: Learn                         │
+                  │ Pattern extract │  Update reviewer_patterns.json           │
+                  │ Style proposals │  Propose style_guide.md changes          │
+                  └─────────────────┘                                          │
+                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Skills Reference
+
+All 16 skills ship as built-in nanobot skills in `nanobot/skills/` and are auto-discovered on startup.
+
+| Skill | Role |
+|-------|------|
+| `r01-orchestrator` | Central state machine — dispatches all phases, manages user checkpoints, collects agent learnings |
+| `r01-ideation` | Tree-search hypothesis generation with 5-step DIVERGE/DEVELOP/FILTER/CONVERGE/CHECKPOINT pipeline |
+| `r01-novelty-checker` | Multi-round Semantic Scholar + web search; 4-level overlap classification; verdict categories |
+| `r01-literature` | Domain-parameterized literature agent (hci/healthcare/ai); snowball sampling; claim-evidence mapping; contradiction detection |
+| `r01-writer-hci` | HCI domain writer with CHI/CSCW voice calibration and agent learnings output |
+| `r01-writer-healthcare` | Healthcare domain writer with clinical/regulatory voice and NEJM/JAMA conventions |
+| `r01-writer-ai` | AI/ML domain writer with NeurIPS/ICML voice, baseline comparisons, anti-hype language guide |
+| `r01-writer-integrator` | Cross-domain synthesis; 3-pass outline refinement; word-target feedback loop; terminology concordance |
+| `r01-reviewer-hci` | Simulated HCI reviewer; dual-bias protocol (critical + supportive passes); reflection loop; scratchpad |
+| `r01-reviewer-healthcare` | Simulated healthcare reviewer; PubMed/ClinicalTrials.gov background retrieval; dual-bias; reflection |
+| `r01-reviewer-ai` | Simulated AI/ML reviewer; arXiv/Papers With Code background retrieval; dual-bias; reflection |
+| `r01-reviewer-panel` | 4-persona panel simulation (Senior Methodologist, Clinical Champion, Innovation Advocate, Devil's Advocate); overall impact score 1-9 |
+| `r01-reviser` | Self-generated revision plan with dependency graph; diff tracking; word budget reconciliation |
+| `r01-figures` | matplotlib figure generation from YAML specs; VLM quality review loop; SVG + 300 DPI PNG export |
+| `r01-budget` | NIH budget table (5-year, direct cost cap); personnel, equipment, travel, F&A justification |
+| `r01-evolution` | Cross-project learning loop; extracts reviewer patterns; proposes style guide updates with user approval |
+
+There's also `r01-foa-finder` for locating relevant NIH Funding Opportunity Announcements.
+
+### Key Features
+
+**PI publication awareness.** The investigator verification gate (Phase 1.5) confirms all PIs before the pipeline proceeds. Literature agents are required to cite 5+ PI papers and 3+ per co-PI, so the proposal reflects the team's actual research trajectory rather than generic background.
+
+**Three-tier voice calibration.** Writers read a hierarchy of style files: domain-specific voice (`writing_voice_hci.md`) overrides generic PI voice (`writing_voice.md`), which overrides NIH conventions (`style_guide.md`). Voice files are seeded from real prior proposals and update automatically from feedback.
+
+**Evolution system.** After each completed project, `r01-evolution` extracts patterns from reviewer scores and revision diffs, updates `reviewer_patterns.json`, and proposes changes to the shared style guide. Patterns that appear 3+ times across projects get promoted automatically.
+
+**Reviewer panel simulation.** Four distinct reviewer personas debate the proposal before producing a consensus impact score. The panel tracks score trajectories across revision rounds and maintains a priority matrix (impact vs. effort) for revision guidance.
+
+**Workspace override for subagents.** Each spawned subagent writes to a configurable shared workspace (default: `~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/`). Paths are set in `project.yaml` per project, not hardcoded.
+
+### Quick Start
+
+```bash
+# 1. Clone this fork and install
+git clone https://github.com/dakuow/nanobot.git
+cd nanobot
+pip install -e .
+
+# 2. Set up shared workspace
+mkdir -p ~/Dropbox/AgentWorkspace/PaperAutoGen
+mkdir -p ~/Dropbox/AgentWorkspace/PriorNIHR01Examples
+cp -r r01-proposal/workspace/_templates ~/Dropbox/AgentWorkspace/PaperAutoGen/
+cp -r r01-proposal/workspace/_system ~/Dropbox/AgentWorkspace/PaperAutoGen/
+
+# 3. Create a project
+mkdir -p ~/Dropbox/AgentWorkspace/PaperAutoGen/my-project
+cp ~/Dropbox/AgentWorkspace/PaperAutoGen/_templates/project.yaml \
+   ~/Dropbox/AgentWorkspace/PaperAutoGen/my-project/
+cp ~/Dropbox/AgentWorkspace/PaperAutoGen/_templates/state.json \
+   ~/Dropbox/AgentWorkspace/PaperAutoGen/my-project/
+# Edit project.yaml with your research topic, aims, and team
+
+# 4. Run
+nanobot agent -m "Start R01 pipeline for my-project"
+```
+
+See [r01-proposal/PLAN.md](./r01-proposal/PLAN.md) for the full architecture, phase status, and design decisions.
+
+---
 
 ## ✨ Features
 
@@ -1135,7 +1328,19 @@ nanobot/
 │   ├── skills.py   #    Skills loader
 │   ├── subagent.py #    Background task execution
 │   └── tools/      #    Built-in tools (incl. spawn)
-├── skills/         # 🎯 Bundled skills (github, self-improvement, weather...)
+├── skills/         # 🎯 Bundled skills
+│   ├── r01-orchestrator/   #    R01 pipeline controller
+│   ├── r01-ideation/       #    Hypothesis generation
+│   ├── r01-novelty-checker/#    Literature overlap check
+│   ├── r01-literature/     #    Domain literature search
+│   ├── r01-writer-*/       #    Domain writers (hci, healthcare, ai, integrator)
+│   ├── r01-reviewer-*/     #    Domain reviewers + panel
+│   ├── r01-reviser/        #    Targeted revision
+│   ├── r01-figures/        #    Figure generation
+│   ├── r01-budget/         #    NIH budget
+│   ├── r01-evolution/      #    Cross-project learning
+│   ├── r01-foa-finder/     #    FOA discovery
+│   └── (github, self-improvement, weather, ...)
 ├── channels/       # 📱 Chat channel integrations
 ├── bus/            # 🚌 Message routing
 ├── cron/           # ⏰ Scheduled tasks
@@ -1144,6 +1349,13 @@ nanobot/
 ├── session/        # 💬 Conversation sessions
 ├── config/         # ⚙️ Configuration
 └── cli/            # 🖥️ Commands
+
+r01-proposal/
+├── PLAN.md         # Full architecture, phase status, design decisions
+├── workspace/
+│   ├── _templates/ # project.yaml, state.json, cost/event schemas
+│   └── _system/    # style_guide.md, writing_voice*.md, reviewer_patterns.json
+└── r01_figure_renderer.py  # Standalone matplotlib renderer
 ```
 
 ## 🤝 Contribute & Roadmap
