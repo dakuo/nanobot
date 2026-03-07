@@ -17,15 +17,22 @@ from nanobot.bus.queue import MessageBus
 from nanobot.config.schema import ExecToolConfig
 from nanobot.providers.base import LLMProvider
 
+# Tool denylist per agent type. Agents get ALL tools minus denied ones.
+# MCP tools are never denied — always available to all agent types.
+AGENT_TOOL_DENYLIST: dict[str, set[str]] = {
+    "readonly": {"write_file", "edit_file", "exec", "spawn"},
+    "explorer": {"write_file", "edit_file", "spawn"},
+    "worker": set(),
+}
+
 
 class SubagentManager:
-    """Manages background subagent execution."""
-
     def __init__(
         self,
         provider: LLMProvider,
         workspace: Path,
         bus: MessageBus,
+        parent_tools: ToolRegistry | None = None,
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 4096,
@@ -41,6 +48,7 @@ class SubagentManager:
         self.provider = provider
         self.workspace = workspace
         self.bus = bus
+        self._parent_tools = parent_tools
         self.model = model or provider.get_default_model()
         self.temperature = temperature
         self.max_tokens = max_tokens
@@ -51,7 +59,7 @@ class SubagentManager:
         self.exec_config = exec_config or ExecToolConfig()
         self.restrict_to_workspace = restrict_to_workspace
         self._running_tasks: dict[str, asyncio.Task[None]] = {}
-        self._session_tasks: dict[str, set[str]] = {}  # session_key -> {task_id, ...}
+        self._session_tasks: dict[str, set[str]] = {}
         self._event_queues: list[asyncio.Queue[dict[str, object]]] = []
 
     def subscribe_events(self) -> asyncio.Queue[dict[str, object]]:
@@ -88,6 +96,7 @@ class SubagentManager:
         max_iterations: int | None = None,
         model: str | None = None,
         workspace: str | None = None,
+        agent_type: str | None = None,
     ) -> str:
         """Spawn a subagent to execute a task in the background.
 
@@ -98,6 +107,9 @@ class SubagentManager:
             workspace: Override the working directory for this subagent.
                 Relative paths in file tools resolve against this directory.
                 If omitted, uses the default workspace (~/.nanobot/workspace/).
+            agent_type: Agent type controlling tool access. One of:
+                "worker" (default, full access), "explorer" (no write/spawn),
+                "readonly" (no write/edit/exec/spawn).
         """
         task_id = str(uuid.uuid4())[:8]
         display_label = label or task[:30] + ("..." if len(task) > 30 else "")
@@ -112,6 +124,7 @@ class SubagentManager:
                 max_iterations=max_iterations,
                 model=model,
                 workspace=workspace,
+                agent_type=agent_type,
             )
         )
         self._running_tasks[task_id] = bg_task
@@ -145,6 +158,7 @@ class SubagentManager:
         max_iterations: int | None = None,
         model: str | None = None,
         workspace: str | None = None,
+        agent_type: str | None = None,
     ) -> None:
         """Execute the subagent task and announce the result."""
         logger.info("Subagent [{}] starting task: {}", task_id, label)
@@ -176,6 +190,14 @@ class SubagentManager:
                 )
             )
             tools.register(WebFetchTool(proxy=self.web_proxy))
+
+            if self._parent_tools:
+                for mcp_tool in self._parent_tools.get_mcp_tools():
+                    tools.register(mcp_tool)
+
+            denied = AGENT_TOOL_DENYLIST.get(agent_type or "worker", set())
+            for tool_name in denied:
+                tools.unregister(tool_name)
 
             system_prompt = self._build_subagent_prompt(effective_workspace)
             messages: list[dict[str, Any]] = [

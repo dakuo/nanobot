@@ -62,6 +62,11 @@ class SpawnTool(Tool):
                     "type": "string",
                     "description": "Working directory override for this subagent. Relative file paths resolve against this directory. Use for project-specific workspaces.",
                 },
+                "agent_type": {
+                    "type": "string",
+                    "enum": ["worker", "explorer", "readonly"],
+                    "description": "Agent type controlling tool access. 'worker' (default): full access. 'explorer': read + search + MCP, no write/spawn. 'readonly': read + search + MCP only.",
+                },
             },
             "required": ["task"],
         }
@@ -73,6 +78,7 @@ class SpawnTool(Tool):
         max_iterations: int | None = None,
         model: str | None = None,
         workspace: str | None = None,
+        agent_type: str | None = None,
         **kwargs: Any,
     ) -> str:
         return await self._manager.spawn(
@@ -84,4 +90,5 @@ class SpawnTool(Tool):
             max_iterations=max_iterations,
             model=model,
             workspace=workspace,
+            agent_type=agent_type,
         )
