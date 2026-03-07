@@ -6,6 +6,8 @@ import sys
 import time
 from pathlib import Path
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 PROJECT = Path.home() / "Dropbox/AgentWorkspace/PaperAutoGen/r01-older-adults-mci-home-ai"
@@ -79,6 +81,113 @@ def validate_refs_json(path: Path, domain: str) -> list[str]:
     if must_cite_without_claim > 0:
         issues.append(
             f"{path.name}: {must_cite_without_claim} must-cite refs missing supports_claim"
+        )
+
+    return issues
+
+
+def validate_team_prior_work(project_path: Path, domains: list[str]) -> list[str]:
+    """Validate minimum team_prior_work papers per investigator across all domains.
+
+    Hard gate: PI needs >= 3, each co-PI needs >= 3.
+    """
+    issues = []
+
+    project_yaml = project_path / "project.yaml"
+    if not project_yaml.exists():
+        return [f"project.yaml not found at {project_yaml} — cannot validate team prior work"]
+
+    with open(project_yaml) as f:
+        config = yaml.safe_load(f)
+
+    investigators = config.get("investigators", {})
+    if not investigators:
+        return ["project.yaml has no investigators section — cannot validate team prior work"]
+
+    pi = investigators.get("pi", {})
+    co_investigators = investigators.get("co_investigators", []) or []
+
+    all_refs = []
+    for domain in domains:
+        refs_path = project_path / f"literature/references_{domain}.json"
+        if refs_path.exists():
+            try:
+                data = json.loads(refs_path.read_text())
+                all_refs.extend(data.get("references", []))
+            except json.JSONDecodeError:
+                pass
+
+    team_refs = [r for r in all_refs if r.get("team_prior_work")]
+
+    def count_investigator_papers(name: str) -> int:
+        last_name = name.split()[-1].lower()
+        count = 0
+        for ref in team_refs:
+            authors = ref.get("authors", "").lower()
+            if last_name in authors:
+                count += 1
+        return count
+
+    pi_name = pi.get("name", "Unknown PI")
+    pi_count = count_investigator_papers(pi_name)
+    if pi_count < 3:
+        issues.append(
+            f"HARD FAIL: PI '{pi_name}' has {pi_count} team_prior_work papers (minimum 3)"
+        )
+
+    for co_i in co_investigators:
+        co_name = co_i.get("name", "Unknown Co-I")
+        co_count = count_investigator_papers(co_name)
+        if co_count < 3:
+            issues.append(
+                f"HARD FAIL: Co-I '{co_name}' has {co_count} team_prior_work papers (minimum 3)"
+            )
+
+    total_team = len(team_refs)
+    if total_team == 0:
+        issues.append("HARD FAIL: Zero team_prior_work papers found across all domains")
+
+    return issues
+
+
+def validate_seed_references(project_path: Path, domains: list[str]) -> list[str]:
+    """Validate that all PI-provided seed references appear in literature output."""
+    issues = []
+
+    project_yaml = project_path / "project.yaml"
+    if not project_yaml.exists():
+        return []
+
+    with open(project_yaml) as f:
+        config = yaml.safe_load(f)
+
+    seeds = config.get("seed_references", []) or []
+    if not seeds:
+        return []
+
+    all_refs = []
+    for domain in domains:
+        refs_path = project_path / f"literature/references_{domain}.json"
+        if refs_path.exists():
+            try:
+                data = json.loads(refs_path.read_text())
+                all_refs.extend(data.get("references", []))
+            except json.JSONDecodeError:
+                pass
+
+    user_provided_refs = [r for r in all_refs if r.get("user_provided")]
+    found_count = len(user_provided_refs)
+
+    if found_count < len(seeds):
+        issues.append(
+            f"WARN: {found_count}/{len(seeds)} seed references found in output "
+            f"(missing {len(seeds) - found_count})"
+        )
+
+    if found_count == 0 and len(seeds) > 0:
+        issues.append(
+            f"HARD FAIL: Zero seed references ingested — "
+            f"{len(seeds)} provided in project.yaml but none found in output"
         )
 
     return issues
@@ -227,7 +336,54 @@ async def run_test():
     print(f"\n  Total: {total_refs} references (target: 30-50)")
     print(f"  Result: {'PASS' if target_met else 'FAIL'}\n")
 
-    print(f"=== OVERALL: Elapsed {int(time.time() - start)}s ===")
+    print("--- E.11: Team Prior Work Validation ---")
+    team_issues = validate_team_prior_work(PROJECT, DOMAINS)
+    hard_fails = [i for i in team_issues if i.startswith("HARD FAIL")]
+    if team_issues:
+        for issue in team_issues:
+            print(f"  {'FAIL' if 'HARD FAIL' in issue else 'WARN'}  {issue}")
+    else:
+        team_ref_count = 0
+        for domain in DOMAINS:
+            refs_path = ef[f"refs_{domain}"]
+            if refs_path.exists():
+                try:
+                    data = json.loads(refs_path.read_text())
+                    team_ref_count += sum(
+                        1 for r in data.get("references", []) if r.get("team_prior_work")
+                    )
+                except json.JSONDecodeError:
+                    pass
+        print(f"  PASS  {team_ref_count} team_prior_work papers found across all domains")
+    print(
+        f"\n  Result: {'FAIL' if hard_fails else 'PASS'} — "
+        f"{len(hard_fails)} hard failures, {len(team_issues) - len(hard_fails)} warnings\n"
+    )
+
+    print("--- E.12: Seed Reference Validation ---")
+    seed_issues = validate_seed_references(PROJECT, DOMAINS)
+    seed_hard_fails = [i for i in seed_issues if i.startswith("HARD FAIL")]
+    if seed_issues:
+        for issue in seed_issues:
+            print(f"  {'FAIL' if 'HARD FAIL' in issue else 'WARN'}  {issue}")
+    else:
+        with open(PROJECT / "project.yaml") as f:
+            cfg = yaml.safe_load(f)
+        seed_count = len(cfg.get("seed_references", []) or [])
+        if seed_count > 0:
+            print(f"  PASS  All {seed_count} seed references found in output")
+        else:
+            print("  SKIP  No seed references in project.yaml")
+    print(
+        f"\n  Result: {'FAIL' if seed_hard_fails else 'PASS'} — {len(seed_issues)} issues found\n"
+    )
+
+    overall_pass = (
+        all_present and not all_issues and target_met and not hard_fails and not seed_hard_fails
+    )
+    print(
+        f"=== OVERALL: {'PASS' if overall_pass else 'FAIL'} — Elapsed {int(time.time() - start)}s ==="
+    )
 
 
 if __name__ == "__main__":

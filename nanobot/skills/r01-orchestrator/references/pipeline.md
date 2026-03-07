@@ -83,7 +83,7 @@ The orchestrator uses the same checkpoint mechanism as other user-facing phases.
 If the user provides all metadata upfront in `project.yaml`, this phase auto-completes with no interaction.
 
 **Output artifacts**
-- `project.yaml` updated with `investigators`, `nih_context`, `submission` sections
+- `project.yaml` updated with `investigators`, `nih_context`, `submission` sections (including `foa.budget_ceiling` from FOA analysis)
 - `docs/foa_analysis.md` (if r01-foa-finder was spawned)
 
 **Exit criteria**
@@ -151,8 +151,10 @@ The orchestrator communicates the mode to the ideation agent in the spawn prompt
 1. Populate `state.json.literature_parallel` with entries for hci, healthcare, ai.
 2. Spawn 3 literature subagents simultaneously, each assigned one domain.
 3. Each agent runs a multi-round search workflow:
+   - Step 0: Investigator Publication Search (mandatory — find PI and co-PI papers first).
+   - Step 0.5: Seed Reference Ingestion — read `project.yaml.seed_references`, resolve each via DOI/PMID/URL, annotate as `user_provided: true` and `must-cite`. If the array is empty, skip.
    - Steps 1-4: Build query packs, execute searches, fetch paper details, filter and prioritize.
-   - Step 4.5: Citation graph traversal (snowball sampling via Semantic Scholar API — forward citations and backward references from top 5 must-cite papers, capped at 10 additional papers).
+   - Step 4.5: Citation graph traversal (snowball sampling via Semantic Scholar API — forward citations and backward references from top 5 must-cite papers **plus all user-provided seed references**, capped at 10 additional papers).
    - Step 4.7: Iterative query refinement — assess per-aim coverage, generate refined queries from discovered terminology, run up to 3 total search rounds, exit early when all aims have 5+ papers.
    - Step 5: Annotate each reference with structured fields including `supports_claim` (claim-evidence mapping — one-sentence proposal claim the reference supports).
    - Step 6: Gap analysis with contradiction detection (flag conflicting findings across papers) and evidence synthesis tables (per-aim: paper, population, method, outcome, finding, limitation, our advantage).
@@ -178,6 +180,10 @@ The orchestrator communicates the mode to the ideation agent in the spawn prompt
 - Merged references.json exists and contains 30-50 references.
 - Every `must-cite` reference has a non-empty `supports_claim` field.
 - Merged gaps.md covers all three domains, includes contradiction detection results, and has evidence synthesis tables.
+- **Team prior work gate (HARD FAIL)**: Count references with `"team_prior_work": true` per investigator across the merged `references.json`. Requirements:
+  - PI: minimum **3** references with `team_prior_work: true`
+  - Each co-PI: minimum **3** references with `team_prior_work: true`
+  - If any investigator falls below their minimum, the phase **FAILS**. Do NOT proceed to Phase 4. Instead: identify which investigator(s) are under-represented, re-spawn the literature agent for the domain matching that investigator's expertise with an explicit directive to run Step 0 (Investigator Publication Search) for the missing investigator. Use `scholar_id` from `project.yaml` if available.
 - `phase_status.literature = complete`.
 
 **Error handling**
@@ -284,7 +290,9 @@ The orchestrator communicates the mode to the ideation agent in the spawn prompt
 
 **Actions**
 1. Draft budget assumptions from timeline and staffing.
-2. Produce line-item narrative and justification text.
+2. Read `project.yaml.nih_context.foa.budget_ceiling` for the annual direct cost ceiling. If null, use standard R01 limit ($500K/year direct costs).
+3. Produce line-item narrative and justification text.
+4. Validate that annual direct costs do not exceed the budget ceiling.
 
 **Output artifacts**
 - `budget/budget_table.md`

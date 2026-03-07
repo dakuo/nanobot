@@ -20,6 +20,33 @@ You are spawned with a domain assignment in your task description: `hci`, `healt
 
 NIH reviewers evaluate whether the investigative team has the track record to execute the proposed work. Citing the team's own prior publications is **essential** for establishing credibility. This step is NOT optional — it runs before any domain-specific literature search.
 
+# PI-Provided Seed References (Step 0.5 — Run AFTER Investigator Search, BEFORE Domain Queries)
+
+The PI may provide specific papers as seed references in `project.yaml.seed_references`. These are papers the PI considers important for the proposal — prior work, key competitor papers, foundational references, or papers the PI has seen at conferences. **Every seed reference must be included in the output.**
+
+## Ingestion Procedure
+
+1. Read `project.yaml.seed_references`. If the array is empty or missing, skip this step.
+2. For each seed entry, resolve the paper using the identifier provided (in priority order):
+   - If `doi` is provided: `web_fetch(url="https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}?fields=title,authors,year,abstract,venue,citationCount,externalIds,references,citations", extractMode="text")`
+   - If `pmid` is provided: `exec(command="curl -s 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id={pmid}&retmode=xml&rettype=abstract'")`
+   - If `url` is provided: `web_fetch(url="{url}", extractMode="text")` and extract title/authors/year from the page content
+3. Annotate each resolved paper with the full reference schema (see Step 5):
+   - Set `"user_provided": true` — marks this as a PI-provided seed
+   - Set `"priority": "must-cite"` — PI explicitly wants this cited
+   - Set `"proposal_relevance"` from the `note` field in project.yaml (if provided), otherwise write a relevance statement based on abstract analysis
+   - Determine `"domain"` by matching content to your assigned domain. If the paper fits your domain, claim it. If it fits another domain, still include it with `"domain": "cross-domain"` — the merge step handles deduplication.
+   - Set `"team_prior_work": true` if any author matches an investigator in `project.yaml.investigators`
+4. **Failure handling**: If a seed reference cannot be resolved (DOI not found, URL unreachable), log the failure in `gaps_{domain}.md` under a "Seed Reference Resolution Failures" section. Do NOT silently drop it.
+5. **Forward citation seeding**: All resolved seed references are automatically added to the snowball seed set in Step 4.5 (see below). This ensures the PI's key papers are expanded via citation graph traversal.
+
+## Why This Matters
+PIs provide seed references because they know the landscape. A seed paper may:
+- Be a direct competitor whose work must be cited and differentiated
+- Be the PI's own work that establishes preliminary data
+- Be a foundational paper the PI encountered at a conference that hasn't been indexed yet
+- Represent a specific methodological approach the PI wants to adopt
+
 ## Requirements
 - **Minimum 5 papers per PI** on topics related to the proposal (methods, population, domain, or technology).
 - **Minimum 3 papers per co-PI** on their area of expertise.
@@ -62,9 +89,15 @@ web_search(query="\"Ping Zhang\" OSU AI healthcare site:scholar.google.com", cou
 
 Replace the example names above with the actual investigators from `project.yaml`.
 
-If `scholar_id` (Google Scholar ID or ORCID) is provided, use it for more precise lookup:
+If `scholar_id` (Google Scholar ID or ORCID) is provided, use it for more precise lookup — this is the **preferred path** and should be attempted FIRST before name-based searches:
 ```
-web_fetch(url="https://api.semanticscholar.org/graph/v1/author/{scholar_id}?fields=papers.title,papers.year,papers.venue,papers.citationCount,papers.externalIds,papers.abstract", extractMode="text")
+web_fetch(url="https://scholar.google.com/citations?hl=en&user={scholar_id}&view_op=list_works&sortby=pubdate", extractMode="text")
+```
+This returns the investigator's full publication list sorted by recency. Parse titles, years, and venues from the page.
+
+Also query Semantic Scholar for structured data:
+```
+web_fetch(url="https://api.semanticscholar.org/graph/v1/author/search?query={investigator_name}&fields=name,affiliations,paperCount,citationCount,papers.title,papers.year,papers.venue,papers.citationCount,papers.externalIds,papers.abstract", extractMode="text")
 ```
 
 ### 0c. Select and annotate investigator papers
@@ -181,7 +214,11 @@ From the raw fetched papers, apply these filters:
 Target: **10-18 high-quality references per domain** (30-50 total across three domain agents).
 
 ## Step 4.5: Citation Graph Traversal (Snowball Sampling)
-After filtering, take the **top 5 must-cite papers** from Step 4 and expand the search via their citation graph. This catches papers that use different terminology but are highly relevant.
+After filtering, build the **snowball seed set** from two sources:
+1. **Top 5 must-cite papers** from Step 4 (domain query results)
+2. **All PI-provided seed references** from Step 0.5 (if any)
+
+Expand the search via the citation graph of every paper in the seed set. This catches papers that use different terminology but are highly relevant, and discovers recent work that cites the PI's foundational papers.
 
 For each of the 5 papers, query the Semantic Scholar API for both directions:
 
@@ -199,7 +236,7 @@ The `{paper_id}` can be a DOI (prefix with `DOI:`), PMID (prefix with `PMID:`), 
 
 **Filtering second-hop papers**: Apply the same Step 4 criteria (recency, relevance, quality, domain fit) to all second-hop papers. Add any that pass the filter to the reference pool.
 
-**Cap**: Add at most **10 additional papers** from snowball sampling to prevent scope creep. Prioritize papers with high citation counts and direct aim relevance.
+**Cap**: Add at most **10 additional papers** from snowball sampling to prevent scope creep (this cap applies regardless of seed set size). Prioritize papers with high citation counts and direct aim relevance. For user-provided seeds, prioritize their **forward citations** (papers that cite them) since these represent the most current work building on papers the PI already knows.
 
 ## Step 4.7: Iterative Query Refinement
 After Step 4 filtering and snowball sampling, assess coverage per aim.
@@ -234,12 +271,15 @@ For each selected reference, write a structured annotation:
   "proposal_relevance": "How this connects to our specific aims",
   "supports_claim": "One-sentence proposal claim this reference directly supports",
   "team_prior_work": false,
+  "user_provided": false,
   "priority": "must-cite",
   "target_sections": ["significance", "approach_aim1"]
 }
 ```
 
 Set `"team_prior_work": true` for any paper authored by a PI or co-PI listed in `project.yaml.investigators`. These papers are automatic `must-cite` candidates.
+
+Set `"user_provided": true` for any paper that came from `project.yaml.seed_references`. These are also automatic `must-cite` candidates.
 
 Priority levels: `must-cite` (directly supports a claim), `supporting` (adds depth), `optional` (nice-to-have context).
 
@@ -291,6 +331,7 @@ Write two files:
     "queries_per_round": [12, 3],
     "papers_per_round": [14, 4],
     "snowball_papers_added": 6,
+    "seed_references_ingested": 3,
     "total_references": 18
   },
   "references": [ ... ]
@@ -385,4 +426,4 @@ One table per aim. Each table maps the evidence landscape for that aim.
 - Do NOT leave evidence synthesis table cells empty — write "Not reported" if the paper does not provide that information.
 - Do NOT hardcode year ranges — use the current date to compute recency windows.
 - Do NOT skip the Investigator Publication Search (Step 0). This is mandatory even when `scholar_id` is missing — fall back to name + institution + expertise keyword searches. An R01 proposal without PI self-citations will be scored poorly on the Investigator criterion.
-- Do NOT mark the literature phase as complete if zero `team_prior_work: true` papers are in the output. Go back and search harder.
+- Do NOT mark the literature phase as complete if fewer than **3** `team_prior_work: true` papers per PI/co-PI are in the output. The orchestrator enforces a hard validation gate on this — the phase will FAIL and be re-run. Go back and search harder using `scholar_id` (Google Scholar page), Semantic Scholar API, ACM DL, and PubMed.
