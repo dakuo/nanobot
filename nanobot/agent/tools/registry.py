@@ -54,6 +54,12 @@ class ToolRegistry:
         except Exception as e:
             return f"Error executing {name}: {str(e)}" + _HINT
 
+    def get_mcp_tools(self) -> list[Tool]:
+        """Get all MCP tool wrappers (tools from external MCP servers)."""
+        from nanobot.agent.tools.mcp import MCPToolWrapper
+
+        return [t for t in self._tools.values() if isinstance(t, MCPToolWrapper)]
+
     @property
     def tool_names(self) -> list[str]:
         """Get list of registered tool names."""
