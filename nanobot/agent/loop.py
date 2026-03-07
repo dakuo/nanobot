@@ -94,6 +94,7 @@ class AgentLoop:
             provider=provider,
             workspace=workspace,
             bus=bus,
+            parent_tools=self.tools,
             model=self.model,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
@@ -128,6 +129,9 @@ class AgentLoop:
         builtins = {
             "context7": MCPServerConfig(url="https://mcp.context7.com/mcp", tool_timeout=30),
             "grep_app": MCPServerConfig(url="https://mcp.grep.app", tool_timeout=30),
+            "exa": MCPServerConfig(
+                url="https://mcp.exa.ai/mcp?tools=web_search_exa", tool_timeout=30
+            ),
         }
         builtins.update(user_mcps)
         return builtins
