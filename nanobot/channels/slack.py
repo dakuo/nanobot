@@ -2,8 +2,10 @@
 
 import asyncio
 import re
+from pathlib import Path
 from typing import Any
 
+import httpx
 from loguru import logger
 from slack_sdk.socket_mode.request import SocketModeRequest
 from slack_sdk.socket_mode.response import SocketModeResponse
@@ -15,6 +17,11 @@ from nanobot.bus.events import OutboundMessage
 from nanobot.bus.queue import MessageBus
 from nanobot.channels.base import BaseChannel
 from nanobot.config.schema import SlackConfig
+
+MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024  # 20 MB
+
+# Slack subtypes that indicate real user content (not bot/system noise)
+_USER_SUBTYPES = frozenset({"file_share"})
 
 
 class SlackChannel(BaseChannel):
@@ -128,8 +135,9 @@ class SlackChannel(BaseChannel):
         sender_id = event.get("user")
         chat_id = event.get("channel")
 
-        # Ignore bot/system messages (any subtype = not a normal user message)
-        if event.get("subtype"):
+        # Ignore bot/system messages — allow user-generated subtypes (e.g. file_share) through
+        subtype = event.get("subtype")
+        if subtype and subtype not in _USER_SUBTYPES:
             return
         if self._bot_user_id and sender_id == self._bot_user_id:
             return
@@ -175,6 +183,43 @@ class SlackChannel(BaseChannel):
         if self.config.reply_in_thread and not thread_ts:
             thread_ts = event.get("ts")
 
+        # Download file attachments from file_share events
+        content_parts = [text] if text else []
+        media_paths: list[str] = []
+        for file_info in event.get("files") or []:
+            dl_url = file_info.get("url_private_download") or file_info.get("url_private")
+            filename = file_info.get("name") or "file"
+            size = file_info.get("size") or 0
+            if not dl_url or not self._web_client:
+                continue
+            if size and size > MAX_ATTACHMENT_BYTES:
+                content_parts.append(
+                    f"[attachment: {filename} - too large ({size // 1024 // 1024}MB)]"
+                )
+                continue
+            try:
+                media_dir = Path.home() / ".nanobot" / "media"
+                media_dir.mkdir(parents=True, exist_ok=True)
+                safe_name = filename.replace("/", "_").replace("\\", "_")
+                file_path = media_dir / f"{file_info.get('id', 'file')}_{safe_name}"
+                async with httpx.AsyncClient() as http:
+                    resp = await http.get(
+                        dl_url,
+                        headers={"Authorization": f"Bearer {self.config.bot_token}"},
+                        follow_redirects=True,
+                        timeout=30.0,
+                    )
+                    resp.raise_for_status()
+                    file_path.write_bytes(resp.content)
+                media_paths.append(str(file_path))
+                content_parts.append(f"[file: {file_path}]")
+                logger.debug("Downloaded Slack file {} to {}", filename, file_path)
+            except Exception as e:
+                logger.warning("Failed to download Slack file {}: {}", filename, e)
+                content_parts.append(f"[attachment: {filename} - download failed]")
+
+        content = "\n".join(p for p in content_parts if p) or "[empty message]"
+
         if should_respond:
             try:
                 if self._web_client and event.get("ts"):
@@ -207,7 +252,8 @@ class SlackChannel(BaseChannel):
             await self._handle_message(
                 sender_id=sender_id,
                 chat_id=chat_id,
-                content=text,
+                content=content,
+                media=media_paths,
                 metadata=metadata,
                 session_key=session_key,
             )
