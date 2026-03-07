@@ -55,9 +55,9 @@ class WebSearchTool(Tool):
             "query": {"type": "string", "description": "Search query"},
             "count": {
                 "type": "integer",
-                "description": "Results (1-10)",
+                "description": "Results (1-20)",
                 "minimum": 1,
-                "maximum": 10,
+                "maximum": 20,
             },
         },
         "required": ["query"],
@@ -105,7 +105,7 @@ class WebSearchTool(Tool):
     async def _search_brave(self, query: str, count: int | None = None) -> str:
         """Search using Brave Search API."""
         try:
-            n = min(max(count or self.max_results, 1), 10)
+            n = min(max(count or self.max_results, 1), 20)
             logger.debug("WebSearch [brave]: {}", "proxy" if self.proxy else "direct")
             async with httpx.AsyncClient(proxy=self.proxy) as client:
                 r = await client.get(
@@ -139,7 +139,7 @@ class WebSearchTool(Tool):
     async def _search_exa(self, query: str, count: int | None = None) -> str:
         """Search using Exa API. Supports category='research paper' for academic queries."""
         try:
-            n = min(max(count or self.max_results, 1), 10)
+            n = min(max(count or self.max_results, 1), 20)
             logger.debug("WebSearch [exa]: {}", "proxy" if self.proxy else "direct")
 
             payload: dict[str, Any] = {
