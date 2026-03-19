@@ -29,9 +29,12 @@ class SlackChannel(BaseChannel):
 
     name = "slack"
 
-    def __init__(self, config: SlackConfig, bus: MessageBus):
+    _AUDIO_MIMES = ("audio/",)
+
+    def __init__(self, config: SlackConfig, bus: MessageBus, groq_api_key: str = ""):
         super().__init__(config, bus)
         self.config: SlackConfig = config
+        self.groq_api_key = groq_api_key
         self._web_client: AsyncWebClient | None = None
         self._socket_client: SocketModeClient | None = None
         self._bot_user_id: str | None = None
@@ -212,7 +215,23 @@ class SlackChannel(BaseChannel):
                     resp.raise_for_status()
                     file_path.write_bytes(resp.content)
                 media_paths.append(str(file_path))
-                content_parts.append(f"[file: {file_path}]")
+
+                mimetype = file_info.get("mimetype") or ""
+                if any(mimetype.startswith(p) for p in self._AUDIO_MIMES):
+                    from nanobot.providers.transcription import GroqTranscriptionProvider
+
+                    transcriber = GroqTranscriptionProvider(api_key=self.groq_api_key)
+                    transcription = await transcriber.transcribe(file_path)
+                    if transcription:
+                        logger.info(
+                            "Transcribed Slack audio {}: {}...", filename, transcription[:50]
+                        )
+                        content_parts.append(f"[transcription: {transcription}]")
+                    else:
+                        content_parts.append(f"[audio: {file_path}]")
+                else:
+                    content_parts.append(f"[file: {file_path}]")
+
                 logger.debug("Downloaded Slack file {} to {}", filename, file_path)
             except Exception as e:
                 logger.warning("Failed to download Slack file {}: {}", filename, e)
