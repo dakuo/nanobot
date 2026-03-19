@@ -155,14 +155,36 @@ From the full text, extract:
 
 For Parent R01 FOAs: budget is standard R01 ($500K/year direct costs; exceeding requires prior IC approval).
 
-## Step 9: Identify Program Officers
+## Step 9: Identify Program Officers and Look Up Emails
 
+### 9a. Extract PO names from NIH Reporter
 From NIH Reporter results (Step 4), extract program officer names associated with:
 - Projects funded by the recommended FOA(s)
 - Projects at the top-ranked IC on similar topics
 - Projects in the last 2 fiscal years
 
-List top 3-5 program officers with their IC affiliation and associated project titles. Include a note that PIs should contact the recommended PO before submission.
+### 9b. Look up PO emails from IC-specific contacts page
+For each recommended FOA, fetch the IC-specific contacts page:
+```
+web_fetch(url="https://grants.nih.gov/grants/guide/contacts/IC-specific-information-{FOA-NUMBER}.html", extractMode="text")
+```
+Parse the table for PO names, email addresses, and IC affiliations. Cross-reference against the PO names found in 9a — if a Reporter-discovered PO appears on the contacts page, use that verified email.
+
+### 9c. Direct PO profile lookup (if contacts page missing or PO not listed)
+For POs found in NIH Reporter but NOT on the contacts page:
+```
+web_search(query="\"{PO Full Name}\" site:nih.gov program officer {IC}", count=5)
+```
+NIH staff profiles and IC program pages often list direct emails. Also try the NIH staff directory:
+```
+web_fetch(url="https://ned.nih.gov/search/ViewDetails.aspx?NIHID=&LastName={LastName}&FirstName={FirstName}", extractMode="text")
+```
+
+### 9d. Construct email as fallback
+If no email is found via 9b or 9c, construct from the standard NIH convention: `firstname.lastname@nih.gov`. Mark these as "(unverified — confirm before sending)".
+
+### 9e. Final PO list
+List top 3-5 program officers with: name, IC affiliation, verified email, associated project titles, and relevance to the proposal. Flag which emails are verified (from contacts page) vs. constructed (from name convention).
 
 ## Step 10: Compute Submission Deadline
 
@@ -266,11 +288,11 @@ Generated: {date}
 ## Program Officers
 
 ### Recommended Contacts
-| Name | IC | Recent Projects | Relevance |
-|------|-----|----------------|-----------|
-| {name} | {IC} | {ProjectNum}: {short title} | {1 sentence} |
+| Name | IC | Email | Verified? | Recent Projects | Relevance |
+|------|-----|-------|-----------|----------------|-----------|
+| {name} | {IC} | {email} | {Yes/Constructed} | {ProjectNum}: {short title} | {1 sentence} |
 
-Note: Contact the recommended Program Officer before submission to discuss fit and IC interest.
+Note: "Verified" emails come from IC-specific contacts pages or NIH staff profiles. "Constructed" emails follow the firstname.lastname@nih.gov convention — confirm before sending. Contact the recommended Program Officer before submission to discuss fit and IC interest.
 
 ## Submission Timeline
 - **Next standard R01 receipt date**: {date}
@@ -292,6 +314,7 @@ nih_context:
     budget_floor: {annual direct cost floor as integer, or null}
   program_officer:
     name: "{PO name}"
+    email: "{PO email}"
     ic: "{PO IC}"
 submission:
   target_deadline: "{YYYY-MM-DD}"
@@ -306,6 +329,8 @@ submission:
 - **Budget ceiling is stated for every FOA recommendation** — for Parent R01s, state $500K/year direct cost limit; for targeted FOAs, extract from the full text.
 - Clinical trial classification correctly maps to PA-25-301/302/303.
 - Program Officers are sourced from NIH Reporter data on the recommended IC (last 2 FY).
+- **Every PO recommendation includes an email address** — verified from the IC-specific contacts page, NIH staff profile, or constructed from the firstname.lastname@nih.gov convention (marked as unverified).
+- The IC-specific contacts page for the recommended FOA(s) MUST be fetched — do NOT skip this step and default to generic institute emails.
 - Submission timeline uses standard R01 receipt dates (Feb 5, Jun 5, Oct 5).
 - If a targeted FOA exists, its scope is verified against the project aims — not just keyword overlap.
 - The Search Summary section shows results from all 4 layers — making it transparent which searches worked and which returned zero.
@@ -326,6 +351,7 @@ submission:
 - Do NOT run Grants.gov curl commands without the python post-processing pipe — raw JSON exceeds the exec tool's 10K character output limit and results WILL be silently truncated.
 - Do NOT construct curl JSON payloads from scratch — use the templates in `references/api_patterns.md`.
 - Do NOT interpret `hitCount: 0` as "no FOAs exist" — try broader keywords and proceed to the next search layer.
+- Do NOT use generic institute inquiry emails (e.g., `[email protected]`, `nibaboratory@mail.nih.gov`) when specific PO names are known — always look up the PO's individual email via the IC-specific contacts page, NIH staff directory, or firstname.lastname@nih.gov convention.
 
 # Agent Learnings Output
 After completing the FOA analysis, append any reusable insights to `.learnings/LEARNINGS.md`:
