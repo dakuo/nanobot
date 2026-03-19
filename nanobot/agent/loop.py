@@ -107,7 +107,9 @@ class AgentLoop:
         )
 
         self._running = False
-        self._mcp_servers = self._with_builtin_mcps(mcp_servers or {})
+        self._mcp_servers = self._with_builtin_mcps(
+            mcp_servers or {}, exa_api_key=exa_api_key or ""
+        )
         self._mcp_stack: AsyncExitStack | None = None
         self._mcp_connected = False
         self._mcp_connecting = False
@@ -121,18 +123,21 @@ class AgentLoop:
         self._register_default_tools()
 
     @staticmethod
-    def _with_builtin_mcps(user_mcps: dict) -> dict:
+    def _with_builtin_mcps(user_mcps: dict, exa_api_key: str = "") -> dict:
         """Merge built-in MCP servers (Context7, Grep.app) with user config.
         User config overrides builtins. Set url="" to disable a builtin."""
         from nanobot.config.schema import MCPServerConfig
 
-        builtins = {
+        builtins: dict[str, MCPServerConfig] = {
             "context7": MCPServerConfig(url="https://mcp.context7.com/mcp", tool_timeout=30),
             "grep_app": MCPServerConfig(url="https://mcp.grep.app", tool_timeout=30),
-            "exa": MCPServerConfig(
-                url="https://mcp.exa.ai/mcp?tools=web_search_exa", tool_timeout=30
-            ),
         }
+        if exa_api_key:
+            builtins["exa"] = MCPServerConfig(
+                url="https://mcp.exa.ai/mcp?tools=web_search_exa",
+                headers={"Authorization": f"Bearer {exa_api_key}"},
+                tool_timeout=30,
+            )
         builtins.update(user_mcps)
         return builtins
 
