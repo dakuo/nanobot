@@ -107,10 +107,11 @@ Output the final outline to `docs/outline.md` only after all 3 passes complete.
 
 ### For Academic Papers: Framing Section Standards
 - **Introduction**: problem → gap → contribution statement → paper structure overview.
-  - **5-element arc** (from PI's 6 highly-cited HCI papers): (1) Problem grounding with concrete evidence/statistics; (2) Explicit gap identification with numbered challenges; (3) "In this work, we..." bridge introducing the system; (4) System modules as numbered list; (5) Contributions as standalone bulleted/numbered list.
+  - **5-element arc** (from PI's 6 highly-cited HCI papers): (1) Problem grounding with concrete evidence/statistics; (2) Explicit gap identification with numbered challenges; (3) "In this work, we..." bridge introducing the system; (4) System components as numbered list — **MUST cross-check count and names against outline.md / user_input.md**; (5) Contributions as standalone bulleted/numbered list.
+  - **System positioning**: Read `docs/user_input.md` for the user's preferred framing language (e.g., "collaborative tool", "digital twins"). Use these exact phrases when describing the system's role.
   - **Paragraph density rule**: For a 10-page paper, the Introduction should be 4–5 paragraphs and ~800–1000 words. Each paragraph must advance the argument, not just introduce a topic. Merge logically sequential arguments (e.g., "problem exists" + "current mitigations are insufficient") into a single paragraph rather than separating them. A paragraph that only sets up the next paragraph should be folded into it.
   - **Compression pattern**: When discussing limitations of existing approaches (e.g., pilot studies, empathy methods), compress to 1–2 sentences per approach citing concrete shortcomings, not a full paragraph per approach. The Introduction motivates; the Related Work section elaborates.
-  - **Positioning economy**: Statements like "our goal is not X but Y" should be embedded as subordinate clauses (e.g., "—not to X, but to Y") rather than standalone sentences.
+  - **Positioning economy**: Statements like "our goal is not X but Y" should be embedded as subordinate clauses (e.g., "not to X, but rather to Y") rather than standalone sentences. Do NOT use em-dashes for this; use commas or restructure.
   - **Contribution list format**: ALWAYS format contributions as a standalone bulleted or numbered list, not inline prose. Introduce with "We make the following contributions:" or "Our primary contributions are:". Each item gets 1–2 sentences on its own line. Typical count: 3–4 items.
   - **Results preview**: Include 1–2 sentences previewing key results BEFORE the contribution list: "Our results show/suggest that..."
   - **Formative study mention**: If the paper includes an empirical or formative study, mention it in the introduction with participant count and method.
@@ -190,3 +191,4 @@ Do not log routine operations. The orchestrator collects these and routes to the
 - Contribution type structure met (empirical, artifact, methodological, etc.).
 - Anonymization clean: no author names, institution names, or identifiable self-citations.
 - Word budget compliant with CHI limits.
+- **No forbidden sentence structures**: zero em-dash parenthetical insertions (`— xxx —`), zero trailing participial phrases (`, verb-ing xxx`), zero comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule. Scan every merged draft for these patterns and rewrite before delivering.

@@ -19,7 +19,12 @@
 
 **Jargon Policy:** Every technical term must be defined on first use. Acronyms must be spelled out on first use and used consistently thereafter. Do not assume reviewers share your exact subdomain — study sections are multidisciplinary.
 
-**Explanatory Insertions:** When inline explanation is needed, use relative clauses (`which`, `who`) or parenthetical asides — never em-dash parentheticals that create long interrupting clauses. Avoid: "wearable sensing — passive continuous sensing via consumer wearables collecting accelerometry — no additional hardware." Prefer: "Wearable sensing collects accelerometry passively through consumer wearables (Fitbit or Apple Watch), which interface with standard health APIs."
+**Explanatory Insertions:** When inline explanation is needed, use relative clauses (`which`, `who`) or parenthetical asides. The following three sentence patterns are **BANNED** (see `writing_voice.md` "Forbidden Sentence Structures" for full examples):
+1. **Em-dash parenthetical insertions** (`— xxx —`): Never wedge long clauses between em-dashes. Use relative clauses or separate sentences instead.
+2. **Trailing participial phrases** (`, verb-ing xxx`): Never append dangling `-ing` clauses. Use conjunctions (`and provides`) or separate sentences instead.
+3. **Comma + gerund/participle clauses** (`, having xxx` / `, being xxx`): Never insert subordinate gerund clauses after commas. Use semicolons, periods, or `because` clauses instead.
+
+These are the most common LLM writing tics. Catch and rewrite every instance before delivering any draft.
 
 **Tone Calibration by Section:**
 - Specific Aims: Compelling, urgent, confident. This is the sales pitch.
@@ -84,7 +89,7 @@ Transitions signal logical flow and prevent reviewers from losing the thread. Us
 
 **Aim interdependency language:**
 - If aims are sequential: "Aim 2 is contingent on the [model/cohort/tool] developed in Aim 1; however, Aim 3 can proceed in parallel."
-- If aims are independent: "Each aim is designed to be independently executable, ensuring the project remains viable if any single aim encounters delays."
+- If aims are independent: "Each aim is designed to be independently executable, which ensures the project remains viable if any single aim encounters delays."
 
 **Avoid:** Starting consecutive paragraphs with the same word. Avoid "Furthermore," "Moreover," "Additionally" as the primary transition mechanism — these are weak. Use content-specific bridges instead.
 
@@ -164,7 +169,7 @@ Caption structure:
 4. Statistical notation if applicable (n=, p<, CI)
 
 Example:
-> **Figure 2. AI-ECG model outperforms cardiologist baseline on cardiotoxicity detection.** ROC curves comparing model performance (AUC=0.91, 95% CI 0.87–0.95) against cardiologist consensus (AUC=0.76) on held-out test set (n=1,240 patients). The model achieves clinically actionable sensitivity (87%) at a specificity of 82%, enabling earlier intervention in chemotherapy-treated patients.
+> **Figure 2. AI-ECG model outperforms cardiologist baseline on cardiotoxicity detection.** ROC curves comparing model performance (AUC=0.91, 95% CI 0.87-0.95) against cardiologist consensus (AUC=0.76) on held-out test set (n=1,240 patients). The model achieves clinically actionable sensitivity (87%) at a specificity of 82%, which enables earlier intervention in chemotherapy-treated patients.
 
 ### Preliminary Data Figures
 - Label preliminary data figures clearly: "Preliminary Data — Figure X"

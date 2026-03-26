@@ -177,10 +177,12 @@ INSTRUCTIONS:
 1. Read the skill file first for your role and quality standards.
 2. Read outline.md and locate YOUR assigned section(s) — use the heading structure and word targets there.
 3. Read references.json and gaps.md to incorporate citations and address gaps.
-4. Write each section to its output file. Use markdown with proper heading hierarchy.
-5. Each section MUST meet its word target (±10%).
-6. Cite references using [AuthorYear] format matching references.json entries.
-7. Follow venue-specific formatting requirements from chi_section_specs.md.
+4. Read docs/user_input.md (if present) for the user's preferred framing, positioning language, and system description.
+5. Write each section to its output file. Use markdown with proper heading hierarchy.
+6. Each section MUST meet its word target (±10%).
+7. Cite references using [AuthorYear] format matching references.json entries.
+8. Follow venue-specific formatting requirements from chi_section_specs.md.
+9. CROSS-CHECK: If your section describes system components/modules, verify the count and names match outline.md and user_input.md exactly. Do not omit components.
 ```
 
 Do NOT ask the subagent to update state.json — the orchestrator tracks completion externally.

@@ -68,6 +68,17 @@ Also preferred (mathematical notation):
 
 ---
 
+## Sentence Structure Rules (Inherited from `writing_voice.md`)
+
+All three forbidden sentence patterns from `writing_voice.md` apply to AI/ML writing without exception:
+1. **Em-dash parenthetical insertions** (`— xxx —`) — use relative clauses or separate sentences instead.
+2. **Trailing participial phrases** (`, verb-ing xxx`) — use conjunctions or separate sentences instead.
+3. **Comma + gerund clauses** (`, having xxx`) — use semicolons, periods, or `because` clauses instead.
+
+See `writing_voice.md` "Forbidden Sentence Structures" for full BANNED/REWRITE examples. Scan every draft for these patterns and rewrite before delivering.
+
+---
+
 ## AI-Specific Conventions
 
 ### Baseline Comparison Ladder

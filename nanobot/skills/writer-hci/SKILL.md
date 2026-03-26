@@ -98,6 +98,13 @@ For each section:
 - **Hedging**: use "suggests", "may indicate", "our findings show" — not overclaiming.
 - **Figure references**: self-contained captions, refer to figures by "Figure 1" not "F1".
 
+### For Academic Papers: System Description Cross-Check (MANDATORY)
+Before finalizing any section that describes the system's components/modules:
+1. **Read the system design section** (or `docs/outline.md` / `docs/user_input.md`) to get the authoritative component list.
+2. **Verify component count** matches exactly. Do not omit "obvious" components like configuration interfaces or input modules.
+3. **Verify component names** match the terminology used in the system section.
+4. **Use the user's positioning language** for the system (e.g., "collaborative tool", "digital twins") — check `docs/user_input.md` for preferred framing.
+
 # Budget Discipline
 - Respect page limits defined in `project.yaml` and section specs.
 - Keep background concise and methods dense.
@@ -134,3 +141,4 @@ Do not log routine operations. The orchestrator collects these and routes to the
 - Contribution type conventions met (empirical, artifact, methodological, etc.).
 - Implications connect directly to findings, not speculative claims.
 - Double-blind compliant: no author or institution identification.
+- **No forbidden sentence structures**: zero em-dash parenthetical insertions (`— xxx —`), zero trailing participial phrases (`, verb-ing xxx`), zero comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule. Scan every draft for these patterns and rewrite before delivering.

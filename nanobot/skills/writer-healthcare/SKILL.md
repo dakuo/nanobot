@@ -118,3 +118,4 @@ Do not log routine operations. The orchestrator collects these and routes to the
 - Ethics statement present in Method section.
 - Reporting guidelines followed (CONSORT, STROBE, etc.).
 - Double-blind compliant: no author or institution identification.
+- **No forbidden sentence structures**: zero em-dash parenthetical insertions (`— xxx —`), zero trailing participial phrases (`, verb-ing xxx`), zero comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule. Scan every draft for these patterns and rewrite before delivering.

@@ -134,12 +134,15 @@ The quote should be quotable standalone — a journalist should be able to pull 
 
 - **Academic abstract voice**: "We present...", "This paper introduces...", "We conducted a study..."
 - **Jargon dumping**: listing technical components without translating to impact
-- **Passive constructions**: "A system was developed..." → "These researchers developed..."
+- **Passive constructions**: "A system was developed..." -> "These researchers developed..."
 - **Citation references**: No "[1]", no "(Wang et al., 2025)", no superscripts
 - **Evaluation metrics**: No AUROC, SUS scores, p-values, effect sizes
 - **Sample size as method detail**: Say "five mental health clinicians" not "N=5 participants"
 - **Footnotes or endnotes**: Everything must be self-contained
 - **Acronym soup**: Define at most one acronym per blurb; prefer spelling out
+- **Em-dash parenthetical insertions** (`— xxx —`): Never wedge clauses between em-dashes. BANNED: "MIND — an LLM-powered dashboard for mental health — integrates..." REWRITE: "MIND, an LLM-powered dashboard for mental health, integrates..."
+- **Trailing participial phrases** (`, verb-ing xxx`): Never append dangling `-ing` clauses. BANNED: "The system combines both data sources, providing clinicians with insights." REWRITE: "The system combines both data sources and provides clinicians with insights."
+- **Comma + gerund clauses** (`, having xxx` / `, being xxx`): Never insert subordinate gerund clauses. BANNED: "The team has extensive experience, having developed three clinical AI systems." REWRITE: "The team has extensive experience and has developed three clinical AI systems."
 
 ---
 

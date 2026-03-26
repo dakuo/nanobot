@@ -146,11 +146,36 @@ Also avoided:
 2. **Parenthetical asides** — best for supplementary detail the reader could skip. Example: "consumer wearables (Fitbit Sense 2 or Apple Watch) collecting accelerometry and heart rate."
 3. **Appositive phrases** (brief, single-noun clarifications) — acceptable when short. Example: "the Boston Bowel Preparation Scale (BBPS), a validated measure of preparation adequacy, was used."
 
-**Avoided:** Em-dash parenthetical insertions that interrupt sentence flow with long explanatory clauses. This pattern creates run-on structures that are hard to parse:
-> wearable sensing — passive continuous sensing via consumer wearables (Fitbit Sense 2 or Apple Watch) collecting accelerometry, heart rate, HRV, and sleep staging data through HealthKit/Google Health Connect APIs — no additional hardware burden.
+### Forbidden Sentence Structures (HARD RULE)
 
-**Preferred rewrite:**
-> Wearable sensing collects accelerometry, heart rate, HRV, and sleep staging data passively through consumer wearables (Fitbit Sense 2 or Apple Watch), which interface with HealthKit and Google Health Connect APIs. This approach requires no additional hardware burden.
+The following three sentence patterns are **BANNED from all writing output**. LLMs generate these patterns frequently, and they compound into unreadable, meandering prose. Every writer agent must catch and rewrite ALL instances before delivering any draft.
+
+**1. Em-dash parenthetical insertions** (`— xxx —` or `— xxx,`):
+Interrupts sentence flow with long explanatory clauses wedged between em-dashes.
+
+- BANNED: "wearable sensing — passive continuous sensing via consumer wearables (Fitbit Sense 2 or Apple Watch) collecting accelerometry, heart rate, HRV, and sleep staging data through HealthKit/Google Health Connect APIs — no additional hardware burden."
+- BANNED: "pilot studies [10] and empathy-based methods [55] — small-scale formative evaluations with clinicians — have shown promise in this area."
+- REWRITE using relative clause: "Wearable sensing collects accelerometry, heart rate, HRV, and sleep staging data passively through consumer wearables (Fitbit Sense 2 or Apple Watch), which interface with HealthKit and Google Health Connect APIs. This approach requires no additional hardware burden."
+- REWRITE using separate sentence: "Pilot studies [10] and empathy-based methods [55] have shown promise in this area. These small-scale formative evaluations with clinicians suggest that..."
+
+**2. Trailing participial phrases** (`, verb-ing xxx`):
+Appends a dangling `-ing` clause to the end of a sentence, creating a weak, passive-sounding tail.
+
+- BANNED: "The system integrates multiple data streams, providing clinicians with actionable insights."
+- BANNED: "We conducted interviews with 12 nurses, revealing significant workflow challenges."
+- BANNED: "The model achieves 0.91 AUROC, outperforming all clinical baselines."
+- REWRITE using conjunction: "The system integrates multiple data streams and provides clinicians with actionable insights."
+- REWRITE using separate sentence: "We conducted interviews with 12 nurses. These interviews revealed significant workflow challenges."
+
+**3. Comma + gerund/participle clauses** (`, having xxx` / `, being xxx` / `, given xxx`):
+Inserts a subordinate clause with a past participle or gerund after a comma, creating an awkward syntactic dependency.
+
+- BANNED: "Our team has extensive experience, having published over 20 papers on this topic."
+- BANNED: "The framework is well-suited for clinical deployment, being designed with HIPAA compliance in mind."
+- REWRITE using semicolon: "Our team has extensive experience; we have published over 20 papers on this topic."
+- REWRITE using relative clause: "The framework is well-suited for clinical deployment because it was designed with HIPAA compliance in mind."
+
+**Why these are banned:** These three patterns are the most common LLM writing tics. They produce sentences that are technically grammatical but stylistically weak — they meander instead of asserting. Academic writing demands direct, claim-forward sentences. When tempted to use any of these patterns, split into two sentences or restructure with a conjunction or relative clause.
 
 ---
 

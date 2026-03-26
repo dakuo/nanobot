@@ -28,6 +28,15 @@
 - Implications for Design: Concrete, actionable, grounded in findings.
 - Conclusion: Crisp summary. No new claims.
 
+**Forbidden Sentence Structures (HARD RULE — applies to ALL sections):**
+The following three sentence patterns are **BANNED**. LLMs generate them frequently, and they produce weak, meandering prose. Catch and rewrite every instance.
+
+1. **Em-dash parenthetical insertions** (`— xxx —`): Never wedge explanatory clauses between em-dashes. BANNED: "pilot studies [10] and empathy-based methods [55] — small-scale evaluations with clinicians — have shown..." REWRITE: "Pilot studies [10] and empathy-based methods [55] have shown... These small-scale evaluations with clinicians suggest..."
+2. **Trailing participial phrases** (`, verb-ing xxx`): Never append dangling `-ing` clauses. BANNED: "The system integrates data, providing clinicians with insights." REWRITE: "The system integrates data and provides clinicians with insights."
+3. **Comma + gerund/participle clauses** (`, having xxx` / `, being xxx`): Never insert subordinate gerund clauses. BANNED: "Our team has experience, having published 20 papers." REWRITE: "Our team has experience; we have published 20 papers."
+
+When tempted by these patterns, split into two sentences or use a conjunction/relative clause.
+
 ---
 
 ## 2. ACM Citation Format
