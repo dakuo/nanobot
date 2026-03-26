@@ -334,15 +334,14 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_api_base="http://localhost:8000/v3",
     ),
     # === Auxiliary (not a primary LLM provider) ============================
-    # AWS Bedrock: auth via AWS profile/credentials, not API keys.
-    # api_key → AWS_PROFILE, api_base → AWS_REGION_NAME (via env_extras).
+    # AWS Bedrock: uses Anthropic SDK with AnthropicBedrock client.
+    # api_key → aws_profile, api_base → aws_region.
     ProviderSpec(
         name="bedrock",
         keywords=("bedrock",),
         env_key="AWS_PROFILE",
         display_name="AWS Bedrock",
-        backend="openai_compat",
-        env_extras=(("AWS_REGION_NAME", "{api_base}"),),
+        backend="anthropic",
         default_api_base="us-east-1",
         uses_env_auth=True,
         supports_prompt_caching=True,
