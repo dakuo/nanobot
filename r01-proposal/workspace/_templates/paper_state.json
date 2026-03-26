@@ -1,0 +1,94 @@
+{
+  "_schema": "paper-pipeline-state/v1",
+  "document_type": "paper",
+  "current_phase": "init",
+
+  "phase_status": {
+    "init":       "pending",
+    "literature": "pending",
+    "outline":    "pending",
+    "writing":    "pending",
+    "figures":    "pending",
+    "review":     "pending",
+    "revision":   "pending",
+    "export":     "pending"
+  },
+
+  "_writing_parallel_note": "The orchestrator populates writing_parallel dynamically during the outline phase based on project.yaml sections[]. Each entry key matches the section title (slugified). Example entry: {\"agent\": \"paper-writer-hci\", \"status\": \"pending\", \"attempt\": 0, \"word_count\": 0, \"draft_version\": 0}",
+  "writing_parallel": {},
+
+  "review_round": 0,
+  "max_review_rounds": 2,
+
+  "review_results": {
+    "review_hci": {
+      "agent": "paper-reviewer-hci",
+      "status": "pending",
+      "attempt": 0,
+      "scores": {
+        "contribution": null,
+        "rigor": null,
+        "presentation": null,
+        "significance": null
+      },
+      "recommendation": null,
+      "summary": null
+    },
+    "review_healthcare": {
+      "agent": "paper-reviewer-healthcare",
+      "status": "pending",
+      "attempt": 0,
+      "scores": {
+        "contribution": null,
+        "rigor": null,
+        "presentation": null,
+        "significance": null
+      },
+      "recommendation": null,
+      "summary": null
+    },
+    "review_ai": {
+      "agent": "paper-reviewer-ai",
+      "status": "pending",
+      "attempt": 0,
+      "scores": {
+        "contribution": null,
+        "rigor": null,
+        "presentation": null,
+        "significance": null
+      },
+      "recommendation": null,
+      "summary": null
+    },
+    "panel": {
+      "agent": "paper-reviewer-panel",
+      "status": "pending",
+      "attempt": 0,
+      "overall_recommendation": null,
+      "confidence": null,
+      "priority_revisions": [],
+      "summary": null
+    }
+  },
+
+  "artifacts": {
+    "references": null,
+    "outline": null,
+    "draft": null,
+    "figure_plan": null,
+    "review_decision": null,
+    "response_letter": null,
+    "final_package": null,
+    "evolution_summary": null
+  },
+
+  "anonymization_check": {
+    "passed": false,
+    "issues": []
+  },
+
+  "checkpoints_awaiting_user": [],
+  "started_at": null,
+  "updated_at": null,
+  "events": []
+}

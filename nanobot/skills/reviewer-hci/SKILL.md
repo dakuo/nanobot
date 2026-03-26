@@ -1,10 +1,22 @@
 ---
-name: r01-reviewer-hci
+name: reviewer-hci
 description: "HCI reviewer persona for simulated NIH study section. Reviews proposals from human-computer interaction perspective. Evaluates user study design, HCI methodology, participant recruitment, usability claims. Triggers: invoked by orchestrator during review phase."
 ---
 
+# Document Type Awareness
+Read `project.yaml.document_type` before starting. This skill operates in two modes:
+- **R01 mode** (`document_type: "r01"`): NIH study section conventions. Score on NIH 1-9 scale.
+- **Paper mode** (`document_type: "paper"`): Academic peer review conventions. Score on venue-appropriate scale. Read `project.yaml.venue` for the target venue.
+
+Sections marked `### For R01 Proposals` apply ONLY in R01 mode. Sections marked `### For Academic Papers` apply ONLY in paper mode. Unmarked sections apply to BOTH modes.
+
 # Mission
+
+### For R01 Proposals
 Provide NIH-style HCI critique focused on methodological rigor, participant realism, and validity of usability and adoption claims.
+
+### For Academic Papers
+Provide venue-calibrated HCI peer review (CHI/CSCW/UIST/UbiComp) focused on contribution clarity, methodological rigor, and novelty relative to the declared contribution type. Read `project.yaml.contribution_type` to calibrate expectations.
 
 # Reviewer Lens
 - Evaluate as a senior HCI reviewer with translational health technology experience.
@@ -42,6 +54,8 @@ The final review synthesizes both passes into a balanced, evidence-grounded asse
 4. Usability and adoption measurement validity.
 5. Clarity of HCI scientific contribution.
 
+### For R01 Proposals: NIH Scoring
+
 # Scoring Rubric (NIH 1-9)
 - 1-3: exceptional to very strong
 - 4-6: moderate with notable weaknesses
@@ -51,6 +65,39 @@ For each criterion provide:
 - `score`
 - `evidence` (quote or paraphrase from proposal)
 - `implication` (what this score means for the proposal's success)
+
+### For Academic Papers: Venue Scoring
+
+# Scoring Rubric (CHI/CSCW/UIST/UbiComp)
+
+**Overall recommendation** (ordinal scale):
+- **Strong Accept**: clear accept — significant contribution, excellent execution
+- **Accept**: good paper, should be accepted
+- **Weak Accept**: borderline, lean accept
+- **Borderline**: could go either way
+- **Weak Reject**: borderline, lean reject
+- **Reject**: below threshold
+- **Strong Reject**: clear reject — fundamental problems
+
+**Review dimensions** (score each 1-5, where 5 is best):
+- **Significance of contribution**: Does this meaningfully advance the field?
+- **Originality of approach**: Is this novel relative to prior work?
+- **Research quality / methodological rigor**: Are methods sound and well-executed?
+- **Presentation clarity**: Is the paper well-written and well-organized?
+- **Relevance and coverage of prior work**: Does the related work section adequately position this contribution?
+
+Evaluate against the declared `contribution_type` from `project.yaml`. An empirical paper is judged on study design and analysis quality; an artifact paper on system novelty and evaluation; a methodological paper on the method's generalizability and validation; a theoretical paper on conceptual clarity and grounding.
+
+### For Academic Papers: Desk Rejection Pre-Check
+
+Before the full review, check for desk-rejection triggers:
+- Missing contribution statement in abstract
+- No explicit research questions
+- Word count exceeds venue limit
+- Anonymization violations (author names, institution names visible)
+- Missing ethics statement for human subjects research
+
+If any trigger fires, flag it as `desk_reject_risk` in the output. A desk-reject risk does not stop the full review but is prominently surfaced.
 
 # Strength and Weakness Extraction
 - Strengths must cite concrete methods or design decisions. Minimum 3.
@@ -97,11 +144,21 @@ Write JSON report to `reviews/review_hci_r{N}.json` with fields:
 - `background_questions_asked` (list of questions generated in retrieval step)
 - `background_findings` (summary of what was retrieved; "retrieval failed" if nothing found)
 - `criterion_scores` (each entry: `score`, `evidence`, `implication`)
+
+### For R01 Proposals
 - `nih_dimensions`: `{ "significance": 1-9, "innovation": 1-9, "approach": 1-9 }`
-- `strengths` (minimum 3, each citing concrete methods or design decisions)
-- `weaknesses` (minimum 3, each identifying missing detail or flawed logic)
 - `overall_impact_score` (1-9)
 - `overall_impact_rationale`
+
+### For Academic Papers: Output Format
+- `venue_dimensions`: `{ "significance": 1-5, "originality": 1-5, "research_quality": 1-5, "presentation": 1-5, "prior_work": 1-5 }`
+- `overall_recommendation`: one of Strong Accept / Accept / Weak Accept / Borderline / Weak Reject / Reject / Strong Reject
+- `contribution_type_assessment`: does the paper deliver on its declared contribution type?
+- `desk_reject_risks`: array of issues (empty array if none)
+
+Common fields (both modes):
+- `strengths` (minimum 3, each citing concrete methods or design decisions)
+- `weaknesses` (minimum 3, each identifying missing detail or flawed logic)
 - `suggested_revisions` (each with `revision` and `priority`: critical/high/medium/low)
 - `review_confidence`: `high`, `medium`, or `low` (reflects how much proposal detail was available)
 - `reflection_rounds_used` (1, 2, or 3)
@@ -110,6 +167,12 @@ Write JSON report to `reviews/review_hci_r{N}.json` with fields:
 - Scores align with narrative severity.
 - Weaknesses have feasible revision paths.
 - Comments are specific enough for direct edits.
-- Tone matches NIH study section style.
+- Tone matches NIH study section style (R01 mode) or venue peer review conventions (paper mode).
 - Background retrieval findings are visibly incorporated, not just listed.
 - Reflection rounds are used honestly; do not claim "I am done" after round 1 without genuine re-read.
+
+### For Academic Papers
+- Review matches venue conventions (CHI/CSCW/UIST/UbiComp style).
+- Contribution type assessment is included and calibrated to the declared type.
+- Desk rejection pre-check is completed before the full review.
+- Dimension scores are consistent with the overall recommendation.

@@ -18,14 +18,14 @@ Use two phase-level maps in `state.json`:
 ```json
 {
   "writing_parallel": {
-    "specific_aims": {"agent": "r01-writer-integrator", "status": "pending", "attempt": 0},
-    "approach_aim1": {"agent": "r01-writer-hci", "status": "pending", "attempt": 0},
-    "approach_aim2": {"agent": "r01-writer-ai", "status": "pending", "attempt": 0},
+    "specific_aims": {"agent": "writer-integrator", "status": "pending", "attempt": 0},
+    "approach_aim1": {"agent": "writer-hci", "status": "pending", "attempt": 0},
+    "approach_aim2": {"agent": "writer-ai", "status": "pending", "attempt": 0},
     "approach_aimN": "... populated dynamically from project.yaml aims[]"
   },
   "review_parallel": {
-    "review_hci": {"agent": "r01-reviewer-hci", "status": "pending", "attempt": 0},
-    "review_ai": {"agent": "r01-reviewer-ai", "status": "pending", "attempt": 0}
+    "review_hci": {"agent": "reviewer-hci", "status": "pending", "attempt": 0},
+    "review_ai": {"agent": "reviewer-ai", "status": "pending", "attempt": 0}
   }
 }
 ```
@@ -44,17 +44,17 @@ cfg = read_yaml("project.yaml")
 domains = cfg["domain_tags"]  # ["hci", "healthcare", "ai"]
 
 for domain in domains:
-    state["literature_parallel"][domain] = {"agent": "r01-literature", "status": "pending", "attempt": 0}
+    state["literature_parallel"][domain] = {"agent": "literature", "status": "pending", "attempt": 0}
 write_json("state.json", state)
 
 MAX_LITERATURE_RETRIES = 3  # hard cap — same broken strategy won't fix itself
 
 for domain in domains:
     spawn_subagent(
-        skill="r01-literature",
+        skill="literature",
         task=(
             f"You are the {domain} literature agent. "
-            f"Read the r01-literature skill and follow its instructions. "
+            f"Read the literature skill and follow its instructions. "
             f"Your domain assignment is: {domain}. "
             f"Project path: ~/Dropbox/AgentWorkspace/PaperAutoGen/{{project}}/. "
             f"Find 10-18 references for the {domain} domain. "
@@ -120,7 +120,7 @@ model_overrides = cfg["model_config"]["overrides"]
 
 batch_a = {
     "label": "integrator-framing",
-    "skill": "r01-writer-integrator",
+    "skill": "writer-integrator",
     "sections": {
         "specific_aims":  {"word_target": 500,  "output": "docs/drafts/specific_aims_v1.md"},
         "significance":   {"word_target": 1500, "output": "docs/drafts/significance_v1.md"},
@@ -136,7 +136,7 @@ for aim_key, domain in aim_map.items():
     word_target = page_budget * cfg["word_count_targets"]["words_per_page"]
     aim_batches.append({
         "label": f"writer-{domain}-{aim_key}",
-        "skill": f"r01-writer-{domain}",
+        "skill": f"writer-{domain}",
         "sections": {
             f"approach_{aim_key}": {"word_target": word_target, "output": f"docs/drafts/approach_{aim_key}_v1.md"},
         },
@@ -145,7 +145,7 @@ for aim_key, domain in aim_map.items():
 # --- Populate state.json with dynamic aim entries ---
 for aim_key, domain in aim_map.items():
     state["writing_parallel"][f"approach_{aim_key}"] = {
-        "agent": f"r01-writer-{domain}",
+        "agent": f"writer-{domain}",
         "status": "pending",
         "attempt": 0,
         "word_count": 0,
@@ -212,8 +212,8 @@ for section in ["approach_timeline", "approach_crosscutting", "project_narrative
     state["writing_parallel"][section]["attempt"] += 1
 write_json("state.json", state)
 
-integrator_model = model_overrides.get("r01-writer-integrator", cfg["model_config"]["default_model"])
-integrator_skill_path = find_skill_path("r01-writer-integrator")
+integrator_model = model_overrides.get("writer-integrator", cfg["model_config"]["default_model"])
+integrator_skill_path = find_skill_path("writer-integrator")
 
 # Build dynamic aim list for assembly prompt
 aim_file_list = ", ".join(f"approach_{aim_key}" for aim_key in aim_map)
@@ -222,7 +222,7 @@ spawn(
     label="integrator-assembly",
     max_iterations=30,
     model=integrator_model,
-    task=f"""You are the integration writer. Read the r01-writer-integrator skill at {integrator_skill_path} and follow its instructions.
+    task=f"""You are the integration writer. Read the writer-integrator skill at {integrator_skill_path} and follow its instructions.
 
 PROJECT: {project_path}
 
@@ -257,9 +257,9 @@ Do NOT modify state.json — the orchestrator handles tracking.""",
 ## Pseudocode: Phase 7 Parallel Review Dispatch
 ```python
 reviewers = {
-    "review_hci": "r01-reviewer-hci",
-    "review_healthcare": "r01-reviewer-healthcare",
-    "review_ai": "r01-reviewer-ai",
+    "review_hci": "reviewer-hci",
+    "review_healthcare": "reviewer-healthcare",
+    "review_ai": "reviewer-ai",
 }
 
 for name, agent in reviewers.items():
@@ -275,7 +275,7 @@ while not all_complete("review_parallel"):
     if any_failed("review_parallel"):
         retry_failed("review_parallel")
 
-spawn_subagent(skill="r01-reviewer-panel", task="Synthesize 3 domain reviews; output impact score 1-9")
+spawn_subagent(skill="reviewer-panel", task="Synthesize 3 domain reviews; output impact score 1-9")
 panel = wait_for_panel_result()
 
 if panel.score < 5 and state["review_round"] < state["max_review_rounds"]:

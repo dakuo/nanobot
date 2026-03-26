@@ -1,7 +1,14 @@
 ---
-name: r01-figures
+name: figures
 description: "Figure generation agent for NIH R01 proposals. Creates research-grade figures including system architecture diagrams, study design flowcharts, data flow diagrams, and preliminary results charts. Includes VLM quality review loop with up to 3 retries per figure and figure set coherence review. Triggers: invoked by orchestrator during figures phase."
 ---
+
+# Document Type Awareness
+Read `project.yaml.document_type` before starting. This skill operates in two modes:
+- **R01 mode** (`document_type: "r01"`): NIH R01 proposal conventions. Follow all R01-specific sections below.
+- **Paper mode** (`document_type: "paper"`): Academic paper conventions (CHI, CSCW, UIST, UbiComp). Follow all paper-specific sections below.
+
+Sections marked `### For R01 Proposals` apply ONLY in R01 mode. Sections marked `### For Academic Papers` apply ONLY in paper mode. Unmarked sections apply to BOTH modes.
 
 # Mission
 Produce argument-driving NIH proposal figures with reproducible specs, consistent styling, and captions that directly support proposal claims. Every figure passes a VLM quality check before delivery, and the full set is reviewed for coherence and narrative flow.
@@ -51,6 +58,13 @@ Generate only figures that strengthen decision-critical content:
 - Ensure legibility in grayscale and print-friendly contexts.
 - Keep typography and spacing consistent across figures.
 
+### For Academic Papers: ACM Accessibility and Template Requirements
+When `document_type` is `paper`:
+- **Alt text required**: All figures MUST have descriptive alt text per ACM accessibility policy. Write alt text in `figures/captions.md` alongside each caption.
+- **Color independence**: Follow SIGCHI accessibility guidelines — figures must be distinguishable without color (use patterns, shapes, or labels in addition to color).
+- **Figure placement**: For acmart LaTeX template, use `\begin{figure}[t]` for top-of-column placement. Use `\begin{figure*}[t]` for full-width figures spanning both columns.
+- **Resolution**: Export at minimum 300 DPI for print proceedings. SVG preferred for line art and diagrams.
+
 # VLM Quality Review Loop
 After rendering each figure, send it through a vision-capable model (GPT-4o or equivalent) for structured quality feedback. Repeat until the figure passes or the retry limit is reached.
 
@@ -98,6 +112,14 @@ After all individual figures pass VLM review (or are flagged and set aside), rev
 4. Identify redundancy: flag figures that overlap substantially in content and could be combined into a multi-panel figure.
 5. Identify gaps: note any missing visualizations that would materially strengthen the proposal.
 
+### For Academic Papers: Contribution-Aligned Figure Review
+When `document_type` is `paper`, additionally check that the figure set supports the declared contribution type from `project.yaml.contribution_type`:
+- **Empirical papers**: Must include results figures (charts, tables visualized) and ideally a study design/procedure diagram.
+- **Artifact papers**: Must include system architecture diagram, key UI screenshots or interaction flow, and at least one evaluation results figure.
+- **Methodological papers**: Must include method pipeline/workflow diagram and comparison results against baselines.
+- **Survey papers**: Should include a taxonomy/classification diagram and a trends/distribution figure.
+Flag missing contribution-critical figure types explicitly in `figures/set_review.md`.
+
 **Outputs:**
 - Suggest multi-panel combinations where appropriate.
 - Suggest missing figure types with brief rationale.
@@ -124,6 +146,13 @@ When the pipeline is running in revision round 2 or later, avoid regenerating fi
 - State what the figure shows and why it matters.
 - Define abbreviations and key symbols.
 - Link each caption to one or more aims.
+
+### For Academic Papers: Caption Conventions
+When `document_type` is `paper`:
+- **Self-contained captions**: Each caption must explain both what the figure shows AND why it matters, without requiring the reader to consult body text. A reviewer skimming figures should understand the paper's story.
+- **Sample sizes**: Include N= for any data-driven figures (e.g., "Distribution of task completion times (N=24)").
+- **Figure numbering**: Follow ACM conventions — use "Figure 1", "Figure 2" (not "F1", "F2" or "Fig. 1"). In LaTeX, use `\autoref{fig:name}` for consistent referencing.
+- **Subfigure labeling**: Use (a), (b), (c) for multi-panel figures with a shared caption that describes each panel.
 
 # Integration Guidance
 - Keep figure numbering stable (`F1`, `F2`, ...).

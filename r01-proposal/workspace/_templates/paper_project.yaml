@@ -1,0 +1,248 @@
+# HCI Paper Project Configuration
+# Copy this file to your project folder and rename to project.yaml
+# Fill in all fields before running the paper pipeline
+
+# ---------------------------------------------------------------------------
+# Primary Branching Field
+# The paper-orchestrator and all shared skills read document_type first to
+# determine whether to run R01 logic or paper logic. Do not change this value.
+# ---------------------------------------------------------------------------
+document_type: "paper"
+
+# ---------------------------------------------------------------------------
+# Project Metadata
+# ---------------------------------------------------------------------------
+name: "Untitled HCI Paper"
+shortname: "untitled-paper"        # used for folder names and Slack channels
+created_at: null                   # ISO-8601, set by orchestrator on init
+updated_at: null                   # ISO-8601, updated on every pipeline event
+
+# ---------------------------------------------------------------------------
+# Submission Venue
+# venue: The target conference or journal. Drives reviewer persona selection,
+#   section structure defaults, and word count enforcement.
+# submission_deadline: Paper deadline in ISO-8601 format.
+# submission_type: "full" (standard paper), "short" (notes/late-breaking),
+#   "workshop", "poster", "journal"
+# ---------------------------------------------------------------------------
+venue: "CHI 2027"                  # CHI 2027 | CSCW 2027 | UIST 2027 | UbiComp/IMWUT 2027 | DIS 2027
+submission_deadline: null          # "2026-09-15" (YYYY-MM-DD)
+submission_type: "full"            # "full" | "short" | "workshop" | "poster" | "journal"
+
+# ---------------------------------------------------------------------------
+# Contribution Type
+# Determines the default section structure and review criteria.
+# empirical:      User studies, field studies, interviews, surveys
+# artifact:       Systems, tools, prototypes, design artifacts
+# methodological: New methods, frameworks, measurement instruments
+# theoretical:    Conceptual frameworks, design theories, taxonomies
+# survey:         Systematic literature reviews, meta-analyses
+# opinion:        Provocations, position papers, perspectives
+# benchmark:      Datasets, evaluation frameworks, baselines
+# ---------------------------------------------------------------------------
+contribution_type: "empirical"     # empirical | artifact | methodological | theoretical | survey | opinion | benchmark
+
+# ---------------------------------------------------------------------------
+# Research Questions
+# State 2-4 RQs explicitly. These drive the outline agent and are checked
+# by the reviewer for alignment between RQs, method, and findings.
+# ---------------------------------------------------------------------------
+research_questions:
+  - "RQ1: How do [participants] [do/experience/perceive] [phenomenon] in [context]?"
+  - "RQ2: What [factors/barriers/strategies] [influence/shape] [outcome]?"
+  # - "RQ3: How does [intervention/system] affect [outcome] compared to [baseline]?"
+  # - "RQ4: What design implications emerge from [findings]?"
+
+# ---------------------------------------------------------------------------
+# Authors
+# CAMERA-READY ONLY. Do NOT populate during anonymous review.
+# The pipeline enforces double-blind anonymization during writing and review
+# phases. Author information is only used during the export phase when
+# camera_ready: true is set in the pipeline config below.
+# orcid: 16-digit ORCID in format "0000-0000-0000-0000"
+# ---------------------------------------------------------------------------
+authors:
+  # - name: "Dr. Jane Smith"
+  #   affiliation: "Stanford University"
+  #   email: "jsmith@stanford.edu"
+  #   orcid: "0000-0002-1234-5678"
+  # - name: "Alex Johnson"
+  #   affiliation: "Carnegie Mellon University"
+  #   email: "ajohnson@cmu.edu"
+  #   orcid: null
+
+# ---------------------------------------------------------------------------
+# Domain Tags
+# Drives section writer routing. Papers can span multiple domains.
+# Valid values: hci | ai | healthcare | education | accessibility | cscw | ubicomp
+# ---------------------------------------------------------------------------
+domain_tags:
+  - hci
+
+# ---------------------------------------------------------------------------
+# Scientific Topic
+# Describe the core research question, design problem, or phenomenon this
+# paper addresses. Be specific enough that the outline agent can generate
+# a focused section structure (3-5 sentences recommended).
+# ---------------------------------------------------------------------------
+topic: >
+  Describe the core research question, design problem, or phenomenon this
+  paper addresses. Include the study context, participant population, and
+  the primary contribution you expect to make.
+
+# ---------------------------------------------------------------------------
+# Sections
+# Default structure for empirical papers. Adjust titles and word_budget
+# values to match your contribution type and venue norms.
+# word_budget: target word count for that section (not a hard cap).
+# required: if false, the section can be omitted without pipeline warning.
+# The pipeline writes sections in order; parallel_writing (below) can
+# run non-dependent sections concurrently.
+# ---------------------------------------------------------------------------
+sections:
+  - title: "Abstract"
+    word_budget: 150
+    required: true
+    notes: "ACM metadata abstract. 150-word hard limit. Must state contribution explicitly."
+
+  - title: "Introduction"
+    word_budget: 1500
+    required: true
+    notes: "Motivate the problem, state RQs, summarize contribution, outline paper structure."
+
+  - title: "Related Work"
+    word_budget: 2000
+    required: true
+    notes: "Position against prior work. End with explicit gap statement."
+
+  - title: "Method"
+    word_budget: 2500
+    required: true
+    notes: "Study design, participants (N=), procedure, analysis approach."
+
+  - title: "Findings"
+    word_budget: 2500
+    required: true
+    notes: "Organized by theme or RQ. Every claim supported by data (quotes, counts, examples)."
+
+  - title: "Discussion"
+    word_budget: 1500
+    required: true
+    notes: "Interpret findings, connect to prior work, address limitations."
+
+  - title: "Implications for Design"
+    word_budget: 800
+    required: true
+    notes: "Concrete, grounded design implications. Must connect to specific findings."
+
+  - title: "Limitations"
+    word_budget: 500
+    required: true
+    notes: "Honest scope limitations. Do not bury in Discussion."
+
+  - title: "Conclusion"
+    word_budget: 500
+    required: true
+    notes: "Summarize contribution and future directions. No new claims."
+
+# ---------------------------------------------------------------------------
+# Word Count Targets
+# total: target for the full paper body (excluding references and appendices)
+# abstract: hard limit for ACM metadata abstract
+# ---------------------------------------------------------------------------
+word_count_targets:
+  total: 9000
+  abstract: 150
+
+# ---------------------------------------------------------------------------
+# Review Configuration
+# criteria: which reviewer rubric to apply
+#   "chi"    — CHI/CSCW criteria (contribution, rigor, presentation, significance)
+#   "uist"   — UIST criteria (technical contribution, system novelty, evaluation)
+#   "ubicomp" — UbiComp/IMWUT criteria (deployment, real-world impact, sensing)
+#   "dis"    — DIS criteria (design quality, critical perspective, provocation)
+# max_review_rounds: revision loop cap before forced export (default 2)
+# contribution_type_criteria: if true, reviewer applies contribution-type-specific
+#   rubric from chi_section_specs.md in addition to venue criteria
+# ---------------------------------------------------------------------------
+review:
+  criteria: "chi"                  # "chi" | "uist" | "ubicomp" | "dis"
+  max_review_rounds: 2
+  contribution_type_criteria: true
+
+# ---------------------------------------------------------------------------
+# Revision Configuration
+# mode: "simulated" — the pipeline generates a simulated revision based on
+#         reviewer feedback (default for new submissions)
+#       "actual"    — the pipeline incorporates real reviewer comments from
+#         a prior submission (set reviewer_comments_path)
+# original_submission_path: path to the submitted draft (for actual revisions)
+# reviewer_comments_path: path to the reviewer comments file (for actual revisions)
+# ---------------------------------------------------------------------------
+revision:
+  mode: "simulated"                # "simulated" | "actual"
+  original_submission_path: null   # path to submitted draft, e.g. "docs/final/paper_v1.md"
+  reviewer_comments_path: null     # path to reviewer comments, e.g. "reviews/reviewer_comments.md"
+
+# ---------------------------------------------------------------------------
+# Model Configuration
+# default_model is used by all skills unless overridden below.
+# Override keys must match exact skill names.
+# ---------------------------------------------------------------------------
+model_config:
+  default_model: "claude-opus-4-5"
+  overrides:
+    paper-orchestrator: "claude-opus-4-5"
+    paper-literature: "claude-sonnet-4-5"   # search-heavy, Sonnet is cost-effective
+    paper-outline: "claude-opus-4-5"
+    paper-writer-hci: "claude-opus-4-5"
+    paper-writer-ai: "claude-opus-4-5"
+    paper-writer-healthcare: "claude-opus-4-5"
+    paper-writer-integrator: "claude-opus-4-5"
+    paper-reviewer-hci: "claude-sonnet-4-5"
+    paper-reviewer-healthcare: "claude-sonnet-4-5"
+    paper-reviewer-ai: "claude-sonnet-4-5"
+    paper-reviewer-panel: "claude-opus-4-5"
+    paper-reviser: "claude-opus-4-5"
+    paper-figures: "claude-sonnet-4-5"
+    paper-export: "claude-sonnet-4-5"
+
+# ---------------------------------------------------------------------------
+# Pipeline Settings
+# max_review_rounds: overrides review.max_review_rounds if set here
+# parallel_writing: run non-dependent section writers concurrently
+# literature_max_papers: max papers fetched by paper-literature
+# camera_ready: if true, author information is included in export
+# ---------------------------------------------------------------------------
+pipeline:
+  max_review_rounds: 2
+  parallel_writing: true
+  literature_max_papers: 30
+  literature_recency_years: 5
+  camera_ready: false              # set true only for camera-ready submission
+
+# ---------------------------------------------------------------------------
+# Checkpoint Mode
+# "slack" — orchestrator posts to Slack and waits for human reply
+# "file"  — orchestrator writes a checkpoint file and polls for a response file
+# ---------------------------------------------------------------------------
+checkpoint_mode: "slack"           # "slack" | "file"
+
+# ---------------------------------------------------------------------------
+# Seed References
+# Optional list of papers the user wants to ensure are cited.
+# Provide DOI, arXiv ID, ACM DL URL, or a free-text citation.
+# The literature agent will include these and snowball from them.
+# ---------------------------------------------------------------------------
+seed_references:
+  # - doi: "10.1145/3411764.3445123"
+  # - arxiv: "2301.07041"
+  # - text: "Smith et al. (2023). Understanding X in Y. CHI 2023."
+
+# ---------------------------------------------------------------------------
+# Prior Examples Path
+# Path to a folder of prior papers in the same style/venue.
+# The writing agents use these for voice calibration and structural reference.
+# Relative to the shared workspace root, or an absolute path.
+# ---------------------------------------------------------------------------
+prior_examples_path: null          # e.g. "PriorPaperExamples/CHI/" or absolute path

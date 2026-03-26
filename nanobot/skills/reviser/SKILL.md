@@ -1,10 +1,17 @@
 ---
-name: r01-reviser
+name: reviser
 description: "Revision agent for NIH R01 proposals. Reads domain and panel review JSONs, generates its own prioritized revision plan with dependency analysis, applies targeted edits, tracks precise diffs, and writes structured findings to memory. Triggers: invoked by orchestrator during revision phase, or when user provides feedback."
 ---
 
+# Document Type Awareness
+Read `project.yaml.document_type` before starting. This skill operates in two modes:
+- **R01 mode** (`document_type: "r01"`): NIH R01 proposal conventions. Follow all R01-specific sections below.
+- **Paper mode** (`document_type: "paper"`): Academic paper conventions (CHI, CSCW, UIST, UbiComp). Follow all paper-specific sections below.
+
+Sections marked `### For R01 Proposals` apply ONLY in R01 mode. Sections marked `### For Academic Papers` apply ONLY in paper mode. Unmarked sections apply to BOTH modes.
+
 # Mission
-Convert reviewer and user feedback into targeted proposal improvements that raise impact scores while preserving narrative coherence and page constraints. Generate your own revision plan rather than blindly executing the panel's priority list. Track every change precisely so revisions are auditable and reversible.
+Convert reviewer and user feedback into targeted improvements that raise impact scores (R01) or acceptance likelihood (paper) while preserving narrative coherence and word/page constraints. Generate your own revision plan rather than blindly executing the panel's priority list. Track every change precisely so revisions are auditable and reversible.
 
 # Inputs
 - Domain review JSONs in `reviews/` (with `nih_dimensions`, `background_findings`, etc.).
@@ -95,6 +102,16 @@ Maintain explicit traceability in `reviews/revision_log_r{N}.md` with:
 # Word Budget Discipline
 Respect page limits from `project.yaml` and integrator constraints. When adding required detail, remove low-value repetition elsewhere.
 
+### For Academic Papers: Word Count Targets
+In paper mode, use word counts from `project.yaml.word_count_targets` instead of page limits. Academic papers have strict page limits enforced by the venue's LaTeX template (e.g., ACM acmart). Map word counts to sections:
+- Abstract: typically 150-250 words (venue-specific)
+- Introduction: ~1000-1500 words
+- Related Work: ~1500-2000 words
+- Method/System: ~2000-3000 words
+- Results: ~1500-2000 words
+- Discussion: ~1000-1500 words
+Read actual targets from `project.yaml.word_count_targets` — the above are defaults only.
+
 After all edits, recount words per section and add a reconciliation table to the revision log:
 
 | Section | Target Words | Actual Words | Delta | Action |
@@ -123,6 +140,22 @@ After completing all revisions, write a structured entry to `ideas/findings_memo
 
 Also update `_system/reviewer_patterns.json` with any new patterns discovered this round. Keep entries abstract and reusable, never project-sensitive.
 
+### For Academic Papers: Tracking Recurring Reviewer Concerns
+In paper mode, also track which reviewer concerns recurred across R&R rounds. Add a `recurring_reviewer_concerns` field to findings memory:
+```json
+{
+  "recurring_reviewer_concerns": [
+    {
+      "concern": "Insufficient participant demographics reporting",
+      "reviewer_ids": ["R1", "R3"],
+      "rounds_appeared": [1, 2],
+      "resolution_status": "resolved_in_r2"
+    }
+  ]
+}
+```
+This helps identify reviewer concerns that weren't fully addressed in earlier rounds and need stronger attention.
+
 At the start of each revision round, read `ideas/findings_memory.json` before generating the plan. If a strategy is listed under `ineffective_strategies` in a prior round, do not repeat it.
 
 # Learning Loop
@@ -130,6 +163,88 @@ At the start of each revision round, read `ideas/findings_memory.json` before ge
 - Record anti-patterns and preferred fixes in `_system/revision_playbook.md`.
 - Keep entries abstract and reusable, never project-sensitive.
 - The findings memory write after each round is the primary mechanism for this. The playbook is a human-readable companion.
+
+### For Academic Papers: R&R Response Letter Generation
+
+When `document_type` is `paper`, this skill supports two revision modes (read from `project.yaml.revision.mode`):
+
+#### Mode: `simulated`
+Internal simulated review → revision. Follows the same flow as R01 revision — simulated reviewers generate feedback, this agent revises. No response letter needed.
+
+#### Mode: `actual`
+User pastes real reviewer comments → system generates a formal response letter + revised draft.
+
+**Intake:**
+1. Read reviewer comments from `project.yaml.revision.reviewer_comments_path` (typically `feedback/reviewer_comments_r{N}.md`).
+2. Parse each reviewer's comments into structured issues:
+   ```json
+   {
+     "reviewer_id": "R1",
+     "issue_id": "R1_01",
+     "comment": "Verbatim reviewer comment",
+     "category": "methodology|presentation|contribution|related_work|evaluation|minor",
+     "severity": "critical|major|minor",
+     "actionable": true
+   }
+   ```
+3. Map each issue to the revision plan (same format as the R01 revision plan).
+
+**Response Letter Generation:**
+Generate `reviews/response_letter_r{N}.md` with this structure:
+
+```markdown
+# Response to Reviewers — Revision Round {N}
+
+We thank the reviewers for their constructive feedback. Below we address each comment point-by-point.
+
+## Reviewer 1
+
+### Comment R1.1
+> [Verbatim reviewer comment]
+
+**Response:** [Action taken or reasoned explanation of why not]
+
+**Location:** Section X.Y, paragraph Z (page N in revised manuscript)
+
+**Change:** [Brief description of what was modified, added, or clarified]
+
+---
+
+### Comment R1.2
+> [Verbatim reviewer comment]
+
+...
+
+## Reviewer 2
+...
+
+## Summary of Changes
+| Section | Change Type | Description | Reviewer(s) |
+|---------|------------|-------------|-------------|
+| 3.2 | Major revision | Rewrote evaluation protocol | R1, R3 |
+| 4.1 | Addition | Added demographic breakdown table | R2 |
+| ... | ... | ... | ... |
+```
+
+**Response letter conventions:**
+- Quote every reviewer comment verbatim — do not paraphrase or summarize
+- State the specific action taken, or provide a reasoned explanation for declining
+- Point to the exact location in the paper (section/paragraph/page)
+- Tone: professional, specific, grateful but not sycophantic
+- Never dismiss a reviewer concern without substantive justification
+- Group related comments when multiple reviewers raised the same issue
+
+**Latexdiff guidance:**
+After generating revisions, write `reviews/latexdiff_guide_r{N}.md` documenting:
+- Which `.tex` files were modified
+- Summary of additions (marked in blue) and deletions (marked in red) for author reference
+- Instructions for generating the latexdiff PDF: `latexdiff draft_r{N-1}.tex draft_r{N}.tex > diff_r{N}.tex`
+
+**Timeline awareness:**
+- CHI Revise & Resubmit: typically 4-5 weeks, one round only (accept/reject decision after)
+- CSCW: allows multiple R&R rounds (initial → major revision → minor revision → accept)
+- UIST: typically one conditional acceptance round
+- Plan revision scope accordingly — CHI R&R must be comprehensive in one round; CSCW can be iterative
 
 # Output Contract
 Every revision round produces:
@@ -139,6 +254,10 @@ Every revision round produces:
 - `ideas/findings_memory.json` with a new appended entry for this round.
 - `_system/reviewer_patterns.json` updated with any new patterns.
 - `_system/revision_playbook.md` updated if new anti-patterns or preferred fixes were identified.
+
+### For Academic Papers: Additional Outputs (when `revision.mode` is `actual`)
+- `reviews/response_letter_r{N}.md` — point-by-point response to reviewers.
+- `reviews/latexdiff_guide_r{N}.md` — instructions for generating latexdiff PDF and summary of changes by file.
 
 # Quality Bar
 - Every high-severity issue has a concrete edit response.

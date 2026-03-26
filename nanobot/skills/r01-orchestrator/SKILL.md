@@ -18,23 +18,23 @@ The orchestrator drives a state-machine pipeline that reads `state.json`, determ
 | metadata | orchestrator (interactive) → `r01-foa-finder` (if NIH context missing) |
 | ideation | `r01-ideation` → `r01-novelty-checker` (sub-step) |
 | investigator verification | orchestrator (blocking gate — verify all PIs findable before literature) |
-| literature | `r01-literature` × 3 (parallel: hci, healthcare, ai) → merge |
-| outline | `r01-writer-integrator` |
-| writing | `r01-writer-integrator` + domain writers |
-| figures | `r01-figures` (with optional Figma MCP sync) |
+| literature | `literature` × 3 (parallel: hci, healthcare, ai) → merge |
+| outline | `writer-integrator` |
+| writing | `writer-integrator` + domain writers |
+| figures | `figures` (with optional Figma MCP sync) |
 | budget | `r01-budget` |
-| pre-review gate | `r01-writer-integrator` (quick self-review, optional) |
-| review | `r01-reviewer-hci`, `r01-reviewer-healthcare`, `r01-reviewer-ai`, `r01-reviewer-panel` |
-| revision | `r01-reviser` |
+| pre-review gate | `writer-integrator` (quick self-review, optional) |
+| review | `reviewer-hci`, `reviewer-healthcare`, `reviewer-ai`, `reviewer-panel` |
+| revision | `reviser` |
 | export | orchestrator |
-| evolution | `r01-evolution` |
+| evolution | `evolution` |
 
 See `references/pipeline.md` for full phase contracts and transitions.
 
 # Findings Memory Initialization
 During the init phase, after validating the project directory:
 1. Create `ideas/findings_memory.json` as an empty array `[]` if the file does not already exist.
-2. Populate `state.json.writing_parallel` with dynamic aim entries: for each aim in `project.yaml.aims[]`, add `approach_aim{i}: {agent: r01-writer-{aim.domain_tag}, status: pending, attempt: 0, word_count: 0, draft_version: 0}`.
+2. Populate `state.json.writing_parallel` with dynamic aim entries: for each aim in `project.yaml.aims[]`, add `approach_aim{i}: {agent: writer-{aim.domain_tag}, status: pending, attempt: 0, word_count: 0, draft_version: 0}`.
 This file accumulates cross-round review findings and is read by the reviser at the start of each revision cycle.
 
 # Metadata Collection (Phase 1.5)
@@ -93,9 +93,9 @@ After FILTER, the orchestrator spawns `r01-novelty-checker` as a sub-step. The n
 1. Read `project.yaml` → get domain tags.
 2. Populate `state.json.literature_parallel` with one entry per domain.
 3. Spawn 3 literature subagents with **30-second stagger** between launches to avoid API rate limits (Semantic Scholar: 10 req/5min without key; PubMed E-utilities: 3 req/10s):
-   - Each reads `r01-literature` skill and is assigned one domain: `hci`, `healthcare`, or `ai`.
+   - Each reads `literature` skill and is assigned one domain: `hci`, `healthcare`, or `ai`.
    - **CRITICAL**: Pass `workspace` parameter pointing to the project directory so relative file paths resolve correctly:
-   - Task prompt: "You are the {domain} literature agent. Read the r01-literature skill at {skill_path} and follow its instructions. Your domain assignment is: {domain}. Project path: ~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/. Find 10-18 references for the {domain} domain. IMPORTANT: Run Step 0 (Investigator Publication Search) and Step 0.5 (Seed Reference Ingestion from project.yaml.seed_references) BEFORE domain queries. Use citation graph traversal and iterative query refinement as specified in the skill. Write to literature/references_{domain}.json and literature/gaps_{domain}.md."
+   - Task prompt: "You are the {domain} literature agent. Read the literature skill at {skill_path} and follow its instructions. Your domain assignment is: {domain}. Project path: ~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/. Find 10-18 references for the {domain} domain. IMPORTANT: Run Step 0 (Investigator Publication Search) and Step 0.5 (Seed Reference Ingestion from project.yaml.seed_references) BEFORE domain queries. Use citation graph traversal and iterative query refinement as specified in the skill. Write to literature/references_{domain}.json and literature/gaps_{domain}.md."
    - Spawn call: `spawn(task=..., label="lit-{domain}", max_iterations=30, model=..., workspace="~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/")`
    - Each agent runs multi-round search (up to 3 rounds), snowball sampling via Semantic Scholar citation graph, and produces claim-evidence mappings, contradiction detection, and evidence synthesis tables.
 4. **State tracking (MANDATORY — do this for EVERY spawn and retry):**
@@ -117,9 +117,9 @@ Instead of separate spawns per section, batch into **1 integrator + N aim batche
 
 | Batch | Agent | Sections | Parallel? |
 |-------|-------|----------|-----------|
-| A | r01-writer-integrator | specific_aims, significance, innovation | Yes (with B..N) |
-| B..N | r01-writer-{aim.domain_tag} | approach_aim{i} (one batch per aim in project.yaml) | Yes |
-| E | r01-writer-integrator | timeline, crosscutting, project_narrative, project_summary + merge all into research_strategy_v1.md | After A..N complete |
+| A | writer-integrator | specific_aims, significance, innovation | Yes (with B..N) |
+| B..N | writer-{aim.domain_tag} | approach_aim{i} (one batch per aim in project.yaml) | Yes |
+| E | writer-integrator | timeline, crosscutting, project_narrative, project_summary + merge all into research_strategy_v1.md | After A..N complete |
 
 ## Dispatch Steps
 1. Read `project.yaml` → get aim-to-domain mapping and model overrides.
@@ -165,18 +165,18 @@ INSTRUCTIONS:
 Do NOT ask the subagent to update state.json — the orchestrator tracks completion externally.
 
 # Pre-Review Self-Check (Phase 7 Gate)
-Before spawning the three domain reviewers, the orchestrator MAY run a quick self-review by spawning `r01-writer-integrator` in a lightweight review mode. This catches obvious issues (missing sections, broken citations, unresolved placeholders, word-count violations) cheaply, before committing to the more expensive parallel reviewer spawns.
+Before spawning the three domain reviewers, the orchestrator MAY run a quick self-review by spawning `writer-integrator` in a lightweight review mode. This catches obvious issues (missing sections, broken citations, unresolved placeholders, word-count violations) cheaply, before committing to the more expensive parallel reviewer spawns.
 
 If the self-check finds blocking issues, route back to writing for targeted fixes. If it passes or finds only minor issues, proceed to full review dispatch. Record the self-check outcome in `state.json.pre_review_gate`.
 
 # Parallel Review Dispatch (Phase 8)
 1. Spawn 3 domain reviewers in parallel:
-   - `r01-reviewer-hci`
-   - `r01-reviewer-healthcare`
-   - `r01-reviewer-ai`
+   - `reviewer-hci`
+   - `reviewer-healthcare`
+   - `reviewer-ai`
 2. Each reviewer runs a background retrieval step to pull relevant prior art before scoring, then applies a dual-bias protocol (one pass as a skeptic, one as an advocate) to reduce anchoring.
 3. Each reviewer produces structured JSON with fields: `nih_dimensions` (scored 1-9 per criterion), `background_findings` (retrieved context used), `review_confidence` (0-1), and `critique_items` (prioritized list).
-4. When all 3 complete, spawn `r01-reviewer-panel` to synthesize.
+4. When all 3 complete, spawn `reviewer-panel` to synthesize.
 5. The panel runs a reflection loop: it reads all three domain reviews, identifies conflicts, resolves them with explicit reasoning, and produces `panelist_perspectives`, a revision priority matrix, and a `findings_memory_entry` object.
 6. The panel writes its `findings_memory_entry` to `ideas/findings_memory.json` (append to array).
 7. Panel produces overall impact score (1-9) and summary.
@@ -188,16 +188,16 @@ If the self-check finds blocking issues, route back to writing for targeted fixe
 - Loop control: continue while `score < 5` AND `review_round < max_review_rounds`. When either condition breaks, exit to export.
 
 # Post-Export Evolution (Phase 11)
-After the export phase completes and the user has approved the final package, spawn the `r01-evolution` agent to extract cross-project learning.
+After the export phase completes and the user has approved the final package, spawn the `evolution` agent to extract cross-project learning.
 
-1. Spawn `r01-evolution` with the completed project path.
+1. Spawn `evolution` with the completed project path.
 2. The evolution agent reads all review JSONs, revision diffs, findings memory, and any user feedback files.
 3. It updates `_system/reviewer_patterns.json` with new or incremented patterns.
 4. It appends entries to `_system/evolution_log.json`.
 5. It may propose `_system/style_guide.md` changes that require user approval.
 6. Set `phase_status.evolution = complete` when done.
 
-This phase is also triggered manually when the user provides real NIH reviewer feedback (Summary Statement) after submission. In that case, spawn `r01-evolution` with the project path and the feedback file path.
+This phase is also triggered manually when the user provides real NIH reviewer feedback (Summary Statement) after submission. In that case, spawn `evolution` with the project path and the feedback file path.
 
 # User Checkpoints
 - After ideation, pause for user idea selection (see Idea Feedback Checkpoint below).
@@ -226,7 +226,7 @@ After the integrator produces `docs/outline.md`:
 2. Ask: "Any structural changes? Section emphasis adjustments? Framing you'd change?"
 3. Classify user feedback:
    - **Structural** (aim ordering, section emphasis, scope) → route to integrator for revision.
-   - **Voice/framing** (how something is framed, word choices, argumentation style) → route to `r01-evolution` for `writing_voice.md` update.
+   - **Voice/framing** (how something is framed, word choices, argumentation style) → route to `evolution` for `writing_voice.md` update.
 4. Record all feedback in `feedback/outline_feedback_{project}.json`.
 5. Only proceed to writing dispatch after the user confirms the outline.
 
@@ -235,7 +235,7 @@ After domain writers produce drafts in `docs/drafts/`:
 1. Present each domain's draft to the user (or the user's domain collaborator).
 2. Accept three types of feedback per draft:
    - **Inline edits**: Direct rewrites of sentences/paragraphs → route to reviser.
-   - **Style notes**: "too hedgy", "doesn't sound like me", "I'd never frame it this way" → route to `r01-evolution` for voice file update.
+   - **Style notes**: "too hedgy", "doesn't sound like me", "I'd never frame it this way" → route to `evolution` for voice file update.
    - **Content notes**: "missing X", "wrong emphasis on Y" → route to reviser.
 3. Feedback can be attributed to a specific collaborator: "Dr. Smith's feedback on the healthcare sections" → routes style corrections to `writing_voice_healthcare.md` specifically.
 4. Record all feedback in `feedback/draft_feedback_{project}.json` with fields:
@@ -255,7 +255,7 @@ After domain writers produce drafts in `docs/drafts/`:
    "I classified this as a **style** correction (voice/framing preference). Correct? [yes / no, it's content]"
    If the user overrides, record the override in `user_override`. Over time, the classification model improves.
 6. Route feedback:
-   - Style feedback → spawn `r01-evolution` with the feedback file and target voice file path.
+   - Style feedback → spawn `evolution` with the feedback file and target voice file path.
    - Content feedback → accumulate for the revision phase or re-dispatch to the appropriate writer.
    - Inline edits → apply directly to the draft if the user confirms.
 
@@ -263,7 +263,7 @@ After domain writers produce drafts in `docs/drafts/`:
 After each subagent completes (any phase), check if the agent's output includes an `agent_learnings` JSON block. If present:
 1. Extract the learnings.
 2. Accumulate in `feedback/agent_learnings_{project}.json` (append-only, tagged with agent name and phase).
-3. Route to `r01-evolution` during the evolution phase for pattern detection.
+3. Route to `evolution` during the evolution phase for pattern detection.
 
 Do NOT spawn the evolution agent for each individual learning — batch them and process during the evolution phase.
 

@@ -19,7 +19,7 @@ This document defines the 11 canonical pipeline phases for `r01-orchestrator`.
 1. Validate project directory and required files (`project.yaml`, `state.json`, `cost.jsonl`, `events.jsonl`).
 2. Initialize missing state fields.
 3. Create `ideas/findings_memory.json` as an empty array `[]` if it does not already exist.
-4. Populate `state.json.writing_parallel` with dynamic aim entries: for each aim in `project.yaml.aims[]`, add `approach_aim{i}: {agent: r01-writer-{aim.domain_tag}, status: pending, attempt: 0, word_count: 0, draft_version: 0}`.
+4. Populate `state.json.writing_parallel` with dynamic aim entries: for each aim in `project.yaml.aims[]`, add `approach_aim{i}: {agent: writer-{aim.domain_tag}, status: pending, attempt: 0, word_count: 0, draft_version: 0}`.
 5. If the user provided an initial abstract or project description (the "30-line draft"), save it to `docs/user_input.md`. This file is read by the ideation agent, literature agents, and writers as the seed input and original author intent. It must be preserved unchanged throughout the pipeline.
 6. Record initialization events.
 
@@ -145,7 +145,7 @@ The orchestrator communicates the mode to the ideation agent in the spawn prompt
 - `current_phase = literature`.
 
 **Agent(s)**
-- `r01-literature` × 3 in parallel (one per domain: hci, healthcare, ai).
+- `literature` × 3 in parallel (one per domain: hci, healthcare, ai).
 
 **Actions**
 1. Populate `state.json.literature_parallel` with entries for hci, healthcare, ai.
@@ -195,7 +195,7 @@ The orchestrator communicates the mode to the ideation agent in the spawn prompt
 - `current_phase = outline`.
 
 **Agent(s)**
-- `r01-writer-integrator`.
+- `writer-integrator`.
 
 **Actions**
 1. Build proposal skeleton and section ordering.
@@ -219,19 +219,19 @@ The orchestrator communicates the mode to the ideation agent in the spawn prompt
 - `current_phase = writing`.
 
 **Agent(s)**
-- `r01-writer-integrator` and domain writers:
-  - `r01-writer-hci`
-  - `r01-writer-healthcare`
-  - `r01-writer-ai`
+- `writer-integrator` and domain writers:
+  - `writer-hci`
+  - `writer-healthcare`
+  - `writer-ai`
 
 **Actions**
 1. Read `project.yaml` aim-to-domain mapping and model overrides.
 2. Dynamically generate one writer batch per aim from `project.yaml.aims[]`:
-   - Batch A: `r01-writer-integrator` → specific_aims, significance, innovation
-   - Batches B..N: For each aim `i` in `project.yaml.aims[]`, dispatch `r01-writer-{aims[i].domain_tag}` → `approach_aim{i}`
+   - Batch A: `writer-integrator` → specific_aims, significance, innovation
+   - Batches B..N: For each aim `i` in `project.yaml.aims[]`, dispatch `writer-{aims[i].domain_tag}` → `approach_aim{i}`
 3. Dispatch batch A and all aim batches simultaneously, each with `max_iterations=30` and per-skill `model`.
 4. Each writer reads: SKILL.md, outline.md, refs.json, gaps.md, ideas.json, PriorNIHR01Examples/, style_guide.md, r01_section_specs.md.
-5. After all parallel batches complete, spawn assembly batch: `r01-writer-integrator` for timeline, crosscutting, project_narrative, project_summary + merge all into research_strategy_v1.md.
+5. After all parallel batches complete, spawn assembly batch: `writer-integrator` for timeline, crosscutting, project_narrative, project_summary + merge all into research_strategy_v1.md.
 6. See `parallel_execution.md` for full prompt templates.
 
 **Output artifacts**
@@ -261,7 +261,7 @@ The orchestrator communicates the mode to the ideation agent in the spawn prompt
 - `current_phase = figures`.
 
 **Agent(s)**
-- `r01-figures`.
+- `figures`.
 
 **Actions**
 1. Generate figure plan from research strategy.
@@ -313,11 +313,11 @@ The orchestrator communicates the mode to the ideation agent in the spawn prompt
 - `current_phase = review`.
 
 **Pre-review gate (optional)**
-Before spawning the three domain reviewers, the orchestrator MAY spawn `r01-writer-integrator` in a lightweight self-review mode to catch obvious issues (missing sections, broken citations, unresolved placeholders, word-count violations) cheaply. If blocking issues are found, route back to writing for targeted fixes. Record the outcome in `state.json.pre_review_gate`.
+Before spawning the three domain reviewers, the orchestrator MAY spawn `writer-integrator` in a lightweight self-review mode to catch obvious issues (missing sections, broken citations, unresolved placeholders, word-count violations) cheaply. If blocking issues are found, route back to writing for targeted fixes. Record the outcome in `state.json.pre_review_gate`.
 
 **Agent(s)**
-- Parallel: `r01-reviewer-hci`, `r01-reviewer-healthcare`, `r01-reviewer-ai`
-- Fan-in: `r01-reviewer-panel`
+- Parallel: `reviewer-hci`, `reviewer-healthcare`, `reviewer-ai`
+- Fan-in: `reviewer-panel`
 
 **Actions**
 1. Spawn three domain reviewers on full draft package.
@@ -352,7 +352,7 @@ Before spawning the three domain reviewers, the orchestrator MAY spawn `r01-writ
 - `current_phase = revision`.
 
 **Agent(s)**
-- `r01-reviser`.
+- `reviser`.
 
 **Actions**
 1. Reviser reads `ideas/findings_memory.json` to understand cumulative findings across all prior rounds.
@@ -407,7 +407,7 @@ Before spawning the three domain reviewers, the orchestrator MAY spawn `r01-writ
 - `current_phase = evolution`.
 
 **Agent(s)**
-- `r01-evolution`.
+- `evolution`.
 
 **Actions**
 1. Read all review JSONs, revision diffs, findings memory, and user/NIH feedback from the completed project.

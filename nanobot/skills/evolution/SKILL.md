@@ -1,10 +1,17 @@
 ---
-name: r01-evolution
+name: evolution
 description: "Cross-project learning agent for the R01 pipeline. Extracts patterns, updates system files, and logs evolution entries after each completed project. Invoked by the orchestrator during the post-export evolution phase or manually by the user with feedback. Triggers: 'extract patterns', 'learn from project', 'process reviewer feedback', 'update style guide', 'evolution'."
 ---
 
+# Document Type Awareness
+Read `project.yaml.document_type` before starting. This skill operates in two modes:
+- **R01 mode** (`document_type: "r01"`): NIH R01 proposal conventions. Follow all R01-specific sections below.
+- **Paper mode** (`document_type: "paper"`): Academic paper conventions (CHI, CSCW, UIST, UbiComp). Follow all paper-specific sections below.
+
+Sections marked `### For R01 Proposals` apply ONLY in R01 mode. Sections marked `### For Academic Papers` apply ONLY in paper mode. Unmarked sections apply to BOTH modes.
+
 # Mission
-Extract reusable lessons from completed R01 proposal projects and real NIH reviewer feedback, updating the system's shared knowledge files so that future proposals benefit from accumulated experience. This skill implements the system's institutional memory.
+Extract reusable lessons from completed projects (R01 proposals or academic papers) and real reviewer feedback (NIH or venue-specific), updating the system's shared knowledge files so that future documents benefit from accumulated experience. This skill implements the system's institutional memory.
 
 # When This Skill Runs
 
@@ -57,6 +64,28 @@ Elements that received positive reviewer feedback. Each strength must include:
 ## 2c: Revision Effectiveness
 Which revision strategies worked (moved scores up) and which didn't. Cross-reference `revision_diffs` with score changes between rounds.
 
+### For Academic Papers: Additional Pattern Categories
+When `document_type` is `paper`, also identify:
+
+**Venue-specific patterns** — different venues emphasize different criteria:
+- CHI reviewers prioritize novelty of interaction paradigm and user study rigor
+- CSCW reviewers focus on social/collaborative dimensions and ecological validity
+- UIST reviewers emphasize technical contribution and system performance
+- UbiComp/IMWUT reviewers value longitudinal deployment and real-world evaluation
+
+**Contribution-type patterns** — critiques cluster by paper type:
+- Empirical papers: sample size concerns, ecological validity, generalizability
+- Artifact papers: insufficient evaluation, unclear design rationale, limited comparison to baselines
+- Methodological papers: insufficient validation, narrow applicability claims
+- Theoretical papers: lack of empirical grounding, unclear practical implications
+- Survey papers: incomplete coverage, superficial analysis, missing synthesis
+
+**Common desk-rejection triggers per venue:**
+- CHI: missing ethical approval statement, exceeding page limit, incomplete references
+- CSCW: missing positionality statement for qualitative work, no IRB mention
+- UIST: no working system demonstration, pure design concept without implementation
+- UbiComp/IMWUT: insufficient deployment duration, lab-only evaluation for systems claiming real-world impact
+
 # Step 3: Update `reviewer_patterns.json`
 Append new entries to the appropriate arrays. Follow the schema defined in the file.
 
@@ -66,6 +95,12 @@ Append new entries to the appropriate arrays. Follow the schema defined in the f
 - New patterns get `frequency: 1` and `first_seen` set to today's ISO 8601 date.
 - Each pattern entry must have a concrete `mitigation` field — not "improve this" but "add a power analysis table showing sample size calculation for primary and secondary endpoints."
 - Write domain-specific patterns to the appropriate `domain_specific.{hci|healthcare|ai}` section.
+
+### For Academic Papers: Pattern Organization by Venue and Contribution Type
+In paper mode, organize patterns by venue AND by contribution type, not just by domain:
+- Write venue-specific patterns to `venue_specific.{chi|cscw|uist|ubicomp}` sections.
+- Write contribution-type patterns to `contribution_type_specific.{empirical|artifact|methodological|theoretical|survey}` sections.
+- Cross-reference: a pattern that appears in both CHI and CSCW gets entries in both venue sections with a shared `pattern_id`.
 
 **Validation before writing:**
 - JSON must be valid after update.
@@ -87,6 +122,14 @@ If the evidence suggests changes to writing conventions (not just section-specif
 - Updated citation density targets based on funded vs. unfunded outcomes
 - New domain-specific conventions from reviewer language
 - Updated page budget guidance based on actual proposal metrics
+
+### For Academic Papers: Venue-Specific Style Guide Updates
+In paper mode, also propose updates to venue-specific style guides (e.g., `_system/chi_style_guide.md`, `_system/cscw_style_guide.md`). These capture venue-specific writing conventions learned from reviewer feedback:
+- Section ordering preferences per venue
+- Expected depth of related work coverage
+- Preferred evaluation methodology framing
+- Citation density norms per section
+- Reviewer language patterns unique to that venue
 
 # Step 5: Update `evolution_log.json`
 
@@ -111,6 +154,13 @@ When processing a new project's feedback, also read patterns from ALL prior proj
 1. Read `evolution_log.json` to see what was learned before.
 2. Read `reviewer_patterns.json` to check existing pattern frequencies.
 3. If a pattern from this project matches a pattern from a prior project, increment frequency. High-frequency patterns (3+) should be flagged for potential promotion to `style_guide.md`.
+
+### Cross-Document-Type Pattern Transfer
+Aggregate patterns across both R01 and paper projects. Many critique patterns are transferable across document types:
+- "Weak methodology description" is a universal critique — applicable to both NIH Approach sections and paper Method sections
+- "Insufficient related work coverage" maps to both R01 Significance and paper Related Work
+- "Vague evaluation plan" appears in both R01 Approach and paper Evaluation sections
+When a pattern appears in both R01 and paper projects, note it as `cross_document_type: true` and increase its priority for style guide promotion.
 
 # Step 7: Voice File Updates (from User/Collaborator Feedback)
 
@@ -163,7 +213,44 @@ During the evolution phase, process accumulated agent learnings:
 5. Style observations from writers → route to Step 7 for voice file consideration.
 6. Discard routine/trivial learnings (e.g., "file read succeeded").
 
-# Processing Real NIH Reviewer Feedback
+### For Academic Papers: Processing Venue Reviewer Feedback
+
+When the user provides actual CHI/CSCW/UIST/UbiComp reviewer comments:
+
+1. **Parse the review structure:**
+   - Extract per-criterion scores where available:
+     - CHI: Significance & Contribution, Originality, Research Quality/Rigor, Presentation Quality, Knowledge of Related Work
+     - CSCW: Relevance, Novelty, Technical Quality, Presentation, Reviewer Confidence
+     - UIST: Technical Contribution, Novelty, Presentation, Potential Impact
+   - Extract overall recommendation (accept, revise, reject) and reviewer confidence
+   - Extract verbatim reviewer quotes for each criterion
+   - Separate individual reviewer comments from AC/SPC meta-review
+
+2. **Map critiques to venue-specific patterns:**
+   - For each negative comment: create or update a weakness pattern in the appropriate `venue_specific` section
+   - For each positive comment: create or update a strength pattern
+   - Use the reviewer's exact language in pattern fields
+
+3. **Track acceptance/rejection outcomes for calibration:**
+   - Add a `venue_outcome_entry` to scoring calibration:
+     ```json
+     {
+       "venue": "CHI 2025",
+       "outcome": "revise_and_resubmit",
+       "criterion_scores": {"significance": 3.5, "originality": 4.0, "quality": 2.5, "presentation": 3.0, "related_work": 3.5},
+       "meta_review_summary": "string",
+       "fatal_weakness": "Evaluation methodology insufficient for claims made",
+       "key_strength": "Novel interaction paradigm with clear design rationale"
+     }
+     ```
+
+4. **Handle CSCW's multi-round R&R format:**
+   - CSCW uses SPC screening → external review → major revision cycles
+   - Track patterns across R&R rounds: which concerns persisted, which were resolved
+   - A concern that persists across 2+ rounds is automatically flagged as high-frequency
+   - Map SPC meta-review comments separately — SPC often synthesizes and adds new concerns not raised by individual reviewers
+
+### For R01 Proposals: Processing Real NIH Reviewer Feedback
 
 When the user provides actual NIH Summary Statement text:
 
