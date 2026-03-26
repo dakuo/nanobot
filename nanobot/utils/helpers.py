@@ -31,7 +31,96 @@ def detect_image_mime(data: bytes) -> str | None:
     return None
 
 
-def build_image_content_blocks(raw: bytes, mime: str, path: str, label: str) -> list[dict[str, Any]]:
+def is_pdf(data: bytes) -> bool:
+    return data[:5] == b"%PDF-"
+
+
+def extract_pdf_content(
+    raw: bytes,
+    path: str,
+    max_pages: int = 50,
+    max_image_pages: int = 20,
+    text_threshold: int = 200,
+) -> str | list[dict[str, Any]]:
+    """Extract content from a PDF file.
+
+    Strategy (mirroring openclaw's dual-path approach):
+    1. Try text extraction first via PyMuPDF.
+    2. If extracted text is substantial (>= text_threshold chars), return as text.
+    3. If text is sparse (scanned/image PDF), rasterize pages to PNG images.
+
+    Returns either a plain text string (for text-heavy PDFs) or a list of
+    image content blocks (for scanned PDFs) suitable for LLM consumption.
+    """
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        return "Error: PDF support requires PyMuPDF. Install with: pip install pymupdf"
+
+    try:
+        doc = fitz.open(stream=raw, filetype="pdf")
+    except Exception as exc:
+        return f"Error: Failed to open PDF {path}: {exc}"
+
+    total_pages = len(doc)
+    if total_pages == 0:
+        doc.close()
+        return f"(Empty PDF: {path})"
+
+    pages_to_read = min(total_pages, max_pages)
+
+    # --- Pass 1: text extraction ---
+    all_text: list[str] = []
+    for i in range(pages_to_read):
+        page = doc[i]
+        text = page.get_text().strip()
+        if text:
+            all_text.append(f"--- Page {i + 1} ---\n{text}")
+
+    full_text = "\n\n".join(all_text)
+
+    if len(full_text) >= text_threshold:
+        doc.close()
+        header = f"(PDF: {path}, {total_pages} page{'s' if total_pages != 1 else ''}"
+        if pages_to_read < total_pages:
+            header += f", showing first {pages_to_read}"
+        header += ")\n\n"
+        return header + full_text
+
+    # --- Pass 2: image rasterization (sparse/scanned PDF) ---
+    image_cap = min(pages_to_read, max_image_pages)
+    images: list[dict[str, Any]] = []
+    for i in range(image_cap):
+        page = doc[i]
+        # 2x zoom produces ~150 DPI from default 72 DPI — readable at screen size
+        mat = fitz.Matrix(2.0, 2.0)
+        pix = page.get_pixmap(matrix=mat)
+        png_data = pix.tobytes("png")
+        b64 = base64.b64encode(png_data).decode()
+        images.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{b64}"},
+                "_meta": {"path": path, "page": i + 1},
+            }
+        )
+
+    doc.close()
+
+    label = f"(PDF rendered as images: {path}, {total_pages} page{'s' if total_pages != 1 else ''}"
+    if image_cap < total_pages:
+        label += f", showing first {image_cap}"
+    label += ")"
+
+    if not images:
+        return f"(PDF has no renderable pages: {path})"
+
+    return images + [{"type": "text", "text": label}]
+
+
+def build_image_content_blocks(
+    raw: bytes, mime: str, path: str, label: str
+) -> list[dict[str, Any]]:
     """Build native image blocks plus a short text label."""
     b64 = base64.b64encode(raw).decode()
     return [
@@ -77,6 +166,7 @@ def current_time_str(timezone: str | None = None) -> str:
 
 _UNSAFE_CHARS = re.compile(r'[<>:"/\\|?*]')
 
+
 def safe_filename(name: str) -> str:
     """Replace unsafe path characters with underscores."""
     return _UNSAFE_CHARS.sub("_", name).strip()
@@ -104,9 +194,9 @@ def split_message(content: str, max_len: int = 2000) -> list[str]:
             break
         cut = content[:max_len]
         # Try to break at newline first, then space, then hard break
-        pos = cut.rfind('\n')
+        pos = cut.rfind("\n")
         if pos <= 0:
-            pos = cut.rfind(' ')
+            pos = cut.rfind(" ")
         if pos <= 0:
             pos = max_len
         chunks.append(content[:pos])
@@ -257,21 +347,28 @@ def build_status_content(
     last_out = last_usage.get("completion_tokens", 0)
     ctx_total = max(context_window_tokens, 0)
     ctx_pct = int((context_tokens_estimate / ctx_total) * 100) if ctx_total > 0 else 0
-    ctx_used_str = f"{context_tokens_estimate // 1000}k" if context_tokens_estimate >= 1000 else str(context_tokens_estimate)
+    ctx_used_str = (
+        f"{context_tokens_estimate // 1000}k"
+        if context_tokens_estimate >= 1000
+        else str(context_tokens_estimate)
+    )
     ctx_total_str = f"{ctx_total // 1024}k" if ctx_total > 0 else "n/a"
-    return "\n".join([
-        f"\U0001f408 nanobot v{version}",
-        f"\U0001f9e0 Model: {model}",
-        f"\U0001f4ca Tokens: {last_in} in / {last_out} out",
-        f"\U0001f4da Context: {ctx_used_str}/{ctx_total_str} ({ctx_pct}%)",
-        f"\U0001f4ac Session: {session_msg_count} messages",
-        f"\u23f1 Uptime: {uptime}",
-    ])
+    return "\n".join(
+        [
+            f"\U0001f408 nanobot v{version}",
+            f"\U0001f9e0 Model: {model}",
+            f"\U0001f4ca Tokens: {last_in} in / {last_out} out",
+            f"\U0001f4da Context: {ctx_used_str}/{ctx_total_str} ({ctx_pct}%)",
+            f"\U0001f4ac Session: {session_msg_count} messages",
+            f"\u23f1 Uptime: {uptime}",
+        ]
+    )
 
 
 def sync_workspace_templates(workspace: Path, silent: bool = False) -> list[str]:
     """Sync bundled templates to workspace. Only creates missing files."""
     from importlib.resources import files as pkg_files
+
     try:
         tpl = pkg_files("nanobot") / "templates"
     except Exception:
@@ -304,6 +401,7 @@ def sync_workspace_templates(workspace: Path, silent: bool = False) -> list[str]
 
     if added and not silent:
         from rich.console import Console
+
         for name in added:
             Console().print(f"  [dim]Created {name}[/dim]")
     return added
