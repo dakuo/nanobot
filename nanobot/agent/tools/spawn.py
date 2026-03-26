@@ -34,7 +34,9 @@ class SpawnTool(Tool):
             "Use this for complex or time-consuming tasks that can run independently. "
             "The subagent will complete the task and report back when done. "
             "Optional: set max_iterations (default 15) for longer tasks, "
-            "and model to override the default LLM model for this subagent."
+            "and model to override the default LLM model for this subagent. "
+            "For deliverables or existing projects, inspect the workspace first "
+            "and use a dedicated subdirectory when helpful."
         )
 
     @property
