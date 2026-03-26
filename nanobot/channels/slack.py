@@ -2,10 +2,8 @@
 
 import asyncio
 import re
-from pathlib import Path
 from typing import Any
 
-import httpx
 from loguru import logger
 from slack_sdk.socket_mode.request import SocketModeRequest
 from slack_sdk.socket_mode.response import SocketModeResponse
@@ -15,21 +13,51 @@ from slackify_markdown import slackify_markdown
 
 from nanobot.bus.events import OutboundMessage
 from nanobot.bus.queue import MessageBus
+from pydantic import Field
+
 from nanobot.channels.base import BaseChannel
-from nanobot.config.schema import SlackConfig
+from nanobot.config.schema import Base
 
-MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024  # 20 MB
 
-# Slack subtypes that indicate real user content (not bot/system noise)
-_USER_SUBTYPES = frozenset({"file_share"})
+class SlackDMConfig(Base):
+    """Slack DM policy configuration."""
+
+    enabled: bool = True
+    policy: str = "open"
+    allow_from: list[str] = Field(default_factory=list)
+
+
+class SlackConfig(Base):
+    """Slack channel configuration."""
+
+    enabled: bool = False
+    mode: str = "socket"
+    webhook_path: str = "/slack/events"
+    bot_token: str = ""
+    app_token: str = ""
+    user_token_read_only: bool = True
+    reply_in_thread: bool = True
+    react_emoji: str = "eyes"
+    done_emoji: str = "white_check_mark"
+    allow_from: list[str] = Field(default_factory=list)
+    group_policy: str = "mention"
+    group_allow_from: list[str] = Field(default_factory=list)
+    dm: SlackDMConfig = Field(default_factory=SlackDMConfig)
 
 
 class SlackChannel(BaseChannel):
     """Slack channel using Socket Mode."""
 
     name = "slack"
+    display_name = "Slack"
 
-    def __init__(self, config: SlackConfig, bus: MessageBus):
+    @classmethod
+    def default_config(cls) -> dict[str, Any]:
+        return SlackConfig().model_dump(by_alias=True)
+
+    def __init__(self, config: Any, bus: MessageBus):
+        if isinstance(config, dict):
+            config = SlackConfig.model_validate(config)
         super().__init__(config, bus)
         self.config: SlackConfig = config
         self._web_client: AsyncWebClient | None = None
@@ -88,15 +116,15 @@ class SlackChannel(BaseChannel):
             slack_meta = msg.metadata.get("slack", {}) if msg.metadata else {}
             thread_ts = slack_meta.get("thread_ts")
             channel_type = slack_meta.get("channel_type")
-            user_in_thread = slack_meta.get("user_in_thread", False)
-            # Reply in thread for channel/group messages, or DMs when user is in a thread
-            use_thread = thread_ts and (channel_type != "im" or user_in_thread)
-            thread_ts_param = thread_ts if use_thread else None
+            # Slack DMs don't use threads; channel/group replies may keep thread_ts.
+            thread_ts_param = thread_ts if thread_ts and channel_type != "im" else None
 
-            if msg.content:
+            # Slack rejects empty text payloads. Keep media-only messages media-only,
+            # but send a single blank message when the bot has no text or files to send.
+            if msg.content or not (msg.media or []):
                 await self._web_client.chat_postMessage(
                     channel=msg.chat_id,
-                    text=self._to_mrkdwn(msg.content),
+                    text=self._to_mrkdwn(msg.content) if msg.content else " ",
                     thread_ts=thread_ts_param,
                 )
 
@@ -109,6 +137,12 @@ class SlackChannel(BaseChannel):
                     )
                 except Exception as e:
                     logger.error("Failed to upload file {}: {}", media_path, e)
+
+            # Update reaction emoji when the final (non-progress) response is sent
+            if not (msg.metadata or {}).get("_progress"):
+                event = slack_meta.get("event", {})
+                await self._update_react_emoji(msg.chat_id, event.get("ts"))
+
         except Exception as e:
             logger.error("Error sending Slack message: {}", e)
 
@@ -122,7 +156,9 @@ class SlackChannel(BaseChannel):
             return
 
         # Acknowledge right away
-        await client.send_socket_mode_response(SocketModeResponse(envelope_id=req.envelope_id))
+        await client.send_socket_mode_response(
+            SocketModeResponse(envelope_id=req.envelope_id)
+        )
 
         payload = req.payload or {}
         event = payload.get("event") or {}
@@ -135,24 +171,16 @@ class SlackChannel(BaseChannel):
         sender_id = event.get("user")
         chat_id = event.get("channel")
 
-        # Ignore bot/system messages — allow user-generated subtypes (e.g. file_share) through
-        subtype = event.get("subtype")
-        if subtype and subtype not in _USER_SUBTYPES:
+        # Ignore bot/system messages (any subtype = not a normal user message)
+        if event.get("subtype"):
             return
         if self._bot_user_id and sender_id == self._bot_user_id:
             return
 
         # Avoid double-processing: Slack sends both `message` and `app_mention`
-        # for mentions in channels/groups. Prefer `app_mention` there.
-        # In DMs and group DMs (mpim), only `message` events are sent — no `app_mention`.
+        # for mentions in channels. Prefer `app_mention`.
         text = event.get("text") or ""
-        channel_type = event.get("channel_type") or ""
-        if (
-            event_type == "message"
-            and self._bot_user_id
-            and f"<@{self._bot_user_id}>" in text
-            and channel_type not in ("im", "mpim")
-        ):
+        if event_type == "message" and self._bot_user_id and f"<@{self._bot_user_id}>" in text:
             return
 
         # Debug: log basic event shape
@@ -168,97 +196,71 @@ class SlackChannel(BaseChannel):
         if not sender_id or not chat_id:
             return
 
+        channel_type = event.get("channel_type") or ""
+
         if not self._is_allowed(sender_id, chat_id, channel_type):
             return
 
-        should_respond = channel_type == "im" or self._should_respond_in_channel(
-            event_type, text, chat_id
-        )
-        context_only = not should_respond
+        if channel_type != "im" and not self._should_respond_in_channel(event_type, text, chat_id):
+            return
 
         text = self._strip_bot_mention(text)
 
         thread_ts = event.get("thread_ts")
-        user_in_thread = thread_ts is not None
         if self.config.reply_in_thread and not thread_ts:
             thread_ts = event.get("ts")
-
-        # Download file attachments from file_share events
-        content_parts = [text] if text else []
-        media_paths: list[str] = []
-        for file_info in event.get("files") or []:
-            dl_url = file_info.get("url_private_download") or file_info.get("url_private")
-            filename = file_info.get("name") or "file"
-            size = file_info.get("size") or 0
-            if not dl_url or not self._web_client:
-                continue
-            if size and size > MAX_ATTACHMENT_BYTES:
-                content_parts.append(
-                    f"[attachment: {filename} - too large ({size // 1024 // 1024}MB)]"
+        # Add :eyes: reaction to the triggering message (best-effort)
+        try:
+            if self._web_client and event.get("ts"):
+                await self._web_client.reactions_add(
+                    channel=chat_id,
+                    name=self.config.react_emoji,
+                    timestamp=event.get("ts"),
                 )
-                continue
-            try:
-                media_dir = Path.home() / ".nanobot" / "media"
-                media_dir.mkdir(parents=True, exist_ok=True)
-                safe_name = filename.replace("/", "_").replace("\\", "_")
-                file_path = media_dir / f"{file_info.get('id', 'file')}_{safe_name}"
-                async with httpx.AsyncClient() as http:
-                    resp = await http.get(
-                        dl_url,
-                        headers={"Authorization": f"Bearer {self.config.bot_token}"},
-                        follow_redirects=True,
-                        timeout=30.0,
-                    )
-                    resp.raise_for_status()
-                    file_path.write_bytes(resp.content)
-                media_paths.append(str(file_path))
-                content_parts.append(f"[file: {file_path}]")
-                logger.debug("Downloaded Slack file {} to {}", filename, file_path)
-            except Exception as e:
-                logger.warning("Failed to download Slack file {}: {}", filename, e)
-                content_parts.append(f"[attachment: {filename} - download failed]")
+        except Exception as e:
+            logger.debug("Slack reactions_add failed: {}", e)
 
-        content = "\n".join(p for p in content_parts if p) or "[empty message]"
-
-        if should_respond:
-            try:
-                if self._web_client and event.get("ts"):
-                    await self._web_client.reactions_add(
-                        channel=chat_id,
-                        name=self.config.react_emoji,
-                        timestamp=event.get("ts"),
-                    )
-            except Exception as e:
-                logger.debug("Slack reactions_add failed: {}", e)
-
-        # Thread-scoped sessions: DM threads get isolated context, main DM shares one session
-        if channel_type in ("im", "mpim"):
-            session_key = f"slack_{chat_id}_{event.get('thread_ts')}" if user_in_thread else None
-        else:
-            session_key = f"slack:{chat_id}:{thread_ts}" if thread_ts else None
-
-        metadata: dict[str, Any] = {
-            "slack": {
-                "event": event,
-                "thread_ts": thread_ts,
-                "channel_type": channel_type,
-                "user_in_thread": user_in_thread,
-            },
-        }
-        if context_only:
-            metadata["_context_only"] = True
+        # Thread-scoped session key for channel/group messages
+        session_key = f"slack:{chat_id}:{thread_ts}" if thread_ts and channel_type != "im" else None
 
         try:
             await self._handle_message(
                 sender_id=sender_id,
                 chat_id=chat_id,
-                content=content,
-                media=media_paths,
-                metadata=metadata,
+                content=text,
+                metadata={
+                    "slack": {
+                        "event": event,
+                        "thread_ts": thread_ts,
+                        "channel_type": channel_type,
+                    },
+                },
                 session_key=session_key,
             )
         except Exception:
             logger.exception("Error handling Slack message from {}", sender_id)
+
+    async def _update_react_emoji(self, chat_id: str, ts: str | None) -> None:
+        """Remove the in-progress reaction and optionally add a done reaction."""
+        if not self._web_client or not ts:
+            return
+        try:
+            await self._web_client.reactions_remove(
+                channel=chat_id,
+                name=self.config.react_emoji,
+                timestamp=ts,
+            )
+        except Exception as e:
+            logger.debug("Slack reactions_remove failed: {}", e)
+        if self.config.done_emoji:
+            try:
+                await self._web_client.reactions_add(
+                    channel=chat_id,
+                    name=self.config.done_emoji,
+                    timestamp=ts,
+                )
+            except Exception as e:
+                logger.debug("Slack done reaction failed: {}", e)
 
     def _is_allowed(self, sender_id: str, chat_id: str, channel_type: str) -> bool:
         if channel_type == "im":

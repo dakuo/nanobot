@@ -1,6 +1,6 @@
 ---
 name: memory
-description: Two-layer memory system with auto-recall and grep-based search.
+description: Two-layer memory system with grep-based recall.
 always: true
 ---
 
@@ -9,19 +9,21 @@ always: true
 ## Structure
 
 - `memory/MEMORY.md` — Long-term facts (preferences, project context, relationships). Always loaded into your context.
-- `memory/HISTORY.md` — Append-only event log. Each entry starts with [YYYY-MM-DD HH:MM].
+- `memory/HISTORY.md` — Append-only event log. NOT loaded into context. Search it with grep-style tools or in-memory filters. Each entry starts with [YYYY-MM-DD HH:MM].
 
-## Auto-Recall
+## Search Past Events
 
-History entries relevant to the current message are **automatically retrieved** and included in your context under "Recalled History". You don't need to grep manually for most queries — the system extracts keywords from the user's message and searches HISTORY.md for matching entries.
+Choose the search method based on file size:
 
-You can still grep manually for more targeted searches:
+- Small `memory/HISTORY.md`: use `read_file`, then search in-memory
+- Large or long-lived `memory/HISTORY.md`: use the `exec` tool for targeted search
 
-```bash
-grep -i "keyword" memory/HISTORY.md
-```
+Examples:
+- **Linux/macOS:** `grep -i "keyword" memory/HISTORY.md`
+- **Windows:** `findstr /i "keyword" memory\HISTORY.md`
+- **Cross-platform Python:** `python -c "from pathlib import Path; text = Path('memory/HISTORY.md').read_text(encoding='utf-8'); print('\n'.join([l for l in text.splitlines() if 'keyword' in l.lower()][-20:]))"`
 
-Combine patterns: `grep -iE "meeting|deadline" memory/HISTORY.md`
+Prefer targeted command-line search for large history files.
 
 ## When to Update MEMORY.md
 
