@@ -3,6 +3,7 @@
   "document_type": "paper",
   "current_phase": "init",
 
+  "_phase_status_values": "pending | running | complete | failed | blocked | skipped",
   "phase_status": {
     "init":       "pending",
     "literature": "pending",
@@ -13,6 +14,12 @@
     "revision":   "pending",
     "export":     "pending"
   },
+
+  "_skip_reasons_note": "When a phase is marked 'skipped', record the reason here. Used by mid-pipeline entry to document why earlier phases were bypassed.",
+  "skip_reasons": {},
+
+  "_review_scope_note": "When set, limits review and revision to listed section titles only. Null means all sections.",
+  "review_scope": null,
 
   "_writing_parallel_note": "The orchestrator populates writing_parallel dynamically during the outline phase based on project.yaml sections[]. Each entry key matches the section title (slugified). Example entry: {\"agent\": \"paper-writer-hci\", \"status\": \"pending\", \"attempt\": 0, \"word_count\": 0, \"draft_version\": 0}",
   "writing_parallel": {},

@@ -36,6 +36,74 @@ During the init phase, after validating the project directory:
 7. Populate `state.json.writing_parallel` with dynamic section entries: for each section in `paper_project.yaml.sections[]`, add `{section_name}: {agent: writer-{section.domain_tag}, status: pending, attempt: 0, word_count: 0, draft_version: 0}`.
 8. If the user provided an abstract or paper description, save it to `docs/user_input.md`.
 
+# Mid-Pipeline Entry (Draft Import)
+When a user provides an existing paper draft instead of starting from scratch, the orchestrator must detect this, create the workspace, analyze the draft to determine the correct pipeline phase, and initialize `state.json` with prior phases marked as `skipped`. This section covers all mid-pipeline entry scenarios.
+
+## Trigger Detection
+Detect mid-pipeline entry when the user's message matches any of these patterns:
+- **"revise this paper"** — user provides a full or partial draft (PDF or text) and wants revision feedback.
+- **"review my paper"** — user provides a draft and wants simulated peer review without prior pipeline phases.
+- **"improve this draft"** — user provides text and wants iterative improvement (enters review → revision loop).
+- **"resume paper for {project-name}"** — user wants to continue an existing pipeline that was interrupted.
+- **"continue paper pipeline"** — same as resume; orchestrator reads `state.json` from the most recent project or the project specified.
+
+If the user's message contains one of these trigger phrases AND either attaches a file (PDF/text) or references an existing project directory, enter mid-pipeline mode instead of Phase 1: Init.
+
+## Draft Analysis
+When the user provides a draft (PDF attachment, pasted text, or file path), extract the following before creating the workspace:
+
+1. **Venue**: Scan for venue identifiers in the text — ACM template markers (`\acmConference`, `sigchi-a` class), explicit venue mentions ("submitted to CHI 2026"), or formatting cues (ACM CCS concepts, single-column vs. two-column). If no venue is detectable, ask the user. Do not guess.
+2. **Contribution type**: Infer from section structure and content — empirical papers have "Findings"/"Results" sections with statistical language; artifact papers have "System Design"/"Implementation"; methodological papers have "Method"/"Framework" as primary sections; surveys have "Taxonomy"/"Classification". Map to one of: empirical, artifact, methodological, theoretical, survey, opinion, benchmark.
+3. **Section structure**: Parse all top-level headings (H1/H2) and their approximate word counts. Map each heading to the canonical section names used in the pipeline: `abstract`, `introduction`, `related_work`, `method`, `system`, `study`, `findings`, `discussion`, `conclusion`, `acknowledgments`. Flag any non-standard sections for user confirmation.
+4. **Research questions / contributions**: Extract explicitly stated RQs (lines starting with "RQ1:", "Research Question", or bold/italic question formats) and contribution lists (typically in the introduction, often as numbered items after "contributions of this paper" or similar phrasing). Store these in `docs/extracted_rqs.md`.
+5. **Existing references**: If the draft contains a bibliography or reference list, extract it to `literature/references_imported.json` in the same schema as `literature/references.json`. Set `source: "imported"` on each entry to distinguish from pipeline-generated references.
+
+For PDF input: use available PDF text extraction tools. If the PDF is image-based (scanned), inform the user that OCR extraction may be lossy and ask them to provide a text version instead.
+
+## Workspace Auto-Setup
+After draft analysis, create the project workspace and configuration files:
+
+1. **Create project directory**: `~/Dropbox/AgentWorkspace/PaperAutoGen/{venue}-{paper-name}/` where `{venue}` is lowercase (e.g., `chi`, `cscw`) and `{paper-name}` is derived from the paper title (lowercase, hyphens, no special characters). If the user did not provide a project name, generate one from the first 4-5 significant words of the title.
+2. **Generate `paper_project.yaml`**: Populate from draft analysis results:
+   - `document_type: "paper"`
+   - `venue`: from draft analysis step 1
+   - `contribution_type`: from draft analysis step 2
+   - `sections[]`: from draft analysis step 3, with each section's `domain_tag` inferred from content (e.g., sections discussing user studies → `hci`, sections discussing model architecture → `ai`)
+   - `domain_tags[]`: union of all section domain tags
+   - `model_config`: use defaults from `_templates/paper_project.yaml`
+   - `revision.mode`: set to `"actual"` if the user also provided reviewer comments, otherwise `"simulated"`
+3. **Save the draft**: Copy the provided text to `docs/drafts/paper_draft_v0.md` (the "v0" indicates it was imported, not pipeline-generated). If the user provided a PDF, also save the original to `docs/drafts/original_import.pdf`.
+4. **Initialize `state.json`**: Set `current_phase` to the determined entry phase (see phase determination below). For every phase that precedes the entry phase, set `phase_status` to `"skipped"` with a `skip_reason` field:
+   - `init`: `"skipped"` with `skip_reason: "workspace auto-created from imported draft"`
+   - `literature`: `"skipped"` with `skip_reason: "references imported from draft"` (only if the draft contained a bibliography; otherwise set to `"pending"` so the pipeline can run literature search before review)
+   - `outline`: `"skipped"` with `skip_reason: "structure extracted from imported draft"`
+   - `writing`: `"skipped"` with `skip_reason: "draft imported directly"`
+   - `figures`: `"skipped"` with `skip_reason: "figures present in imported draft"` (only if figures were detected; otherwise `"pending"`)
+5. **Create `reviews/findings_memory.json`** as an empty array `[]`.
+6. **Populate `state.json.writing_parallel`**: Create entries for each detected section with `status: "skipped"`, `word_count` set to the detected word count, and `draft_version: 0`.
+7. **Log the import event**: Append to `events.jsonl`: `{event: "mid_pipeline_import", source: "pdf"|"text"|"file_path", sections_detected: [...], entry_phase: "...", timestamp: "..."}`.
+
+## Phase Determination
+Determine which phase to enter based on what the user provided and requested:
+
+- **User says "revise this paper" + provides full draft** → Enter Phase 6 (review). All prior phases are `skipped`. The review phase runs the full parallel reviewer dispatch on the imported draft. After review, the pipeline proceeds normally through revision and export.
+- **User says "review intro and related work" + provides partial text** → Enter Phase 6 (review) with partial scope (see Partial Scope below). Only the specified sections are reviewed.
+- **User provides draft + reviewer comments** → Enter Phase 7 (revision) in actual R&R mode. Set `revision.mode: "actual"` in `paper_project.yaml`. Save reviewer comments to the path specified by `revision.reviewer_comments_path`. Phases 1-6 are all `skipped`. The reviser generates a response letter and revised draft.
+- **User says "resume paper for {project-name}"** → Do NOT create a new workspace. Read the existing `state.json` from `~/Dropbox/AgentWorkspace/PaperAutoGen/{project-name}/state.json`. Resume from `current_phase`. If `current_phase` has `phase_status: "running"`, check for incomplete subtasks and resume them. If `phase_status: "failed"`, read the failure reason from events and retry. If `phase_status: "complete"`, advance to the next phase.
+- **User provides partial draft (e.g., only introduction + method)** → Enter Phase 4 (writing) for the missing sections only. Mark provided sections as `complete` in `writing_parallel` with their imported word counts. Mark missing sections as `pending`. The pipeline writes only the missing sections, then proceeds to figures → review → revision → export.
+
+Validate the entry phase against the phase contracts in `references/pipeline.md`: confirm that all required inputs for the target phase exist (either imported from the draft or generated during workspace setup). If a required input is missing (e.g., entering review but no `literature/references.json` exists and the draft had no bibliography), either run the missing prerequisite phase first or warn the user that review quality will be limited without literature context.
+
+## Partial Scope
+When the user requests review or revision of specific sections only (not the full paper):
+
+1. **Parse the scope request**: Identify which sections the user named. Match against the canonical section names from draft analysis. Accept both formal names ("related work", "discussion") and informal references ("intro", "methods section", "RW").
+2. **Set `state.json.review_scope`**: Add a `review_scope` field as an array of section names to review, e.g., `["introduction", "related_work"]`. If this field is absent or empty, reviewers review the full paper (default behavior).
+3. **Reviewer dispatch with scope**: When spawning reviewers in Phase 6 with a non-empty `review_scope`, add `REVIEW_SCOPE: {section_list}` to the spawn prompt. Reviewers must focus their critique on the specified sections only, though they may note cross-section issues (e.g., introduction promises something the method doesn't deliver) as secondary observations.
+4. **Revision with scope**: If review was scoped, the subsequent revision phase also inherits the scope. The reviser only patches the sections that were reviewed. Other sections remain untouched in the draft.
+5. **Scope expansion**: If a scoped review reveals issues that require changes in out-of-scope sections (e.g., reviewer says "the introduction overpromises relative to the findings"), flag this to the user at the review checkpoint. The user can choose to expand scope or defer those changes.
+6. **State tracking**: Log the scope in `events.jsonl`: `{event: "partial_scope_set", sections: [...], timestamp: "..."}`. When the scoped review-revision cycle completes, set only the reviewed sections' statuses to `complete` in `writing_parallel`. Unreviewed sections retain their prior status.
+
 # Phase 2: Literature
 Spawn N literature agents in parallel (one per `domain_tag` in `paper_project.yaml.domain_tags`):
 1. Read `paper_project.yaml` → get domain tags (e.g., `[hci, ai]` for a two-domain paper).

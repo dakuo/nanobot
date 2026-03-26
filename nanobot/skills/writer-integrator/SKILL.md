@@ -107,7 +107,18 @@ Output the final outline to `docs/outline.md` only after all 3 passes complete.
 
 ### For Academic Papers: Framing Section Standards
 - **Introduction**: problem → gap → contribution statement → paper structure overview.
+  - **5-element arc** (from PI's 6 highly-cited HCI papers): (1) Problem grounding with concrete evidence/statistics; (2) Explicit gap identification with numbered challenges; (3) "In this work, we..." bridge introducing the system; (4) System modules as numbered list; (5) Contributions as standalone bulleted/numbered list.
+  - **Paragraph density rule**: For a 10-page paper, the Introduction should be 4–5 paragraphs and ~800–1000 words. Each paragraph must advance the argument, not just introduce a topic. Merge logically sequential arguments (e.g., "problem exists" + "current mitigations are insufficient") into a single paragraph rather than separating them. A paragraph that only sets up the next paragraph should be folded into it.
+  - **Compression pattern**: When discussing limitations of existing approaches (e.g., pilot studies, empathy methods), compress to 1–2 sentences per approach citing concrete shortcomings, not a full paragraph per approach. The Introduction motivates; the Related Work section elaborates.
+  - **Positioning economy**: Statements like "our goal is not X but Y" should be embedded as subordinate clauses (e.g., "—not to X, but to Y") rather than standalone sentences.
+  - **Contribution list format**: ALWAYS format contributions as a standalone bulleted or numbered list, not inline prose. Introduce with "We make the following contributions:" or "Our primary contributions are:". Each item gets 1–2 sentences on its own line. Typical count: 3–4 items.
+  - **Results preview**: Include 1–2 sentences previewing key results BEFORE the contribution list: "Our results show/suggest that..."
+  - **Formative study mention**: If the paper includes an empirical or formative study, mention it in the introduction with participant count and method.
+  - **No footnotes in introduction**: Use inline parenthetical clarifications instead of footnotes.
 - **Related Work**: organized by thematic clusters (from literature agent), each cluster critically assessed.
+  - **Preamble sentence**: Open Related Work with a 1–2 sentence overview previewing the subsection structure: "We organize related work into three areas: X (Section 2.1), Y (Section 2.2), and Z (Section 2.3)."
+  - **Three thematic subsections**: Structure RW into exactly 3 subsections. Each subsection MUST end with 1–3 sentences (not a full paragraph) positioning the current work relative to the reviewed literature.
+  - **Prior publication rule (HCI venues)**: Extended abstracts (e.g., CHI EA, CHI LBW, UIST Adjunct) are NOT prior publications under ACM policy—they do not count as full papers and do NOT trigger novelty-delta or disclosure requirements. Do not cite them as "our prior work" or frame contributions relative to them. If the authors previously published an extended abstract on the same topic, treat the current submission as a standalone full paper. This applies to all ACM venues (CHI, UIST, CSCW, DIS, UbiComp/IMWUT).
 - **Discussion**: synthesize findings across RQs, compare to prior work, state limitations, propose future directions.
 - **Conclusion**: 1 paragraph summary, contribution recap, broader impact.
 
@@ -138,6 +149,14 @@ Output the final outline to `docs/outline.md` only after all 3 passes complete.
 - Hard cap: 12000 words (CHI standard paper maximum).
 - Short paper cap: 5000 words.
 - Apply the same Word Target Feedback Loop as R01 mode, but using word counts from `project.yaml.sections[].word_budget`.
+
+### For Academic Papers: Page Budget Enforcement
+Before writing, compute the body word budget from `project.yaml.word_count_targets`:
+1. `total_words = page_limit × words_per_page` (words_per_page: acm-double-column=650, acm-single-column=900, ieee-double-column=750).
+2. Subtract overhead: references ≈ 1 page, figures ≈ 1.5 pages, abstract ≈ 0.25 pages → `body_budget = total_words − (2.75 × words_per_page)`.
+3. Distribute `body_budget` across sections using `project.yaml.sections[].word_budget` as **relative weights**, not absolute targets.
+4. While writing, track a running word count. If cumulative total exceeds `body_budget`, compress remaining sections proportionally.
+5. After assembly, if total body words exceed `body_budget`, identify the section with the highest % over its proportional share and trim it first.
 
 # Agent Learnings Output
 At the end of your work, append an `agent_learnings` JSON block to your final output. This enables cross-agent learning without requiring the generic self-improvement skill.

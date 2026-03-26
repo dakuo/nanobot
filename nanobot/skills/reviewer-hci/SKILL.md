@@ -53,6 +53,7 @@ The final review synthesizes both passes into a balanced, evidence-grounded asse
 3. Interaction design quality and workflow fit.
 4. Usability and adoption measurement validity.
 5. Clarity of HCI scientific contribution.
+6. **Word budget compliance**: Flag if any section exceeds its `word_budget` by >15% or if total body words exceed `page_limit` (computed as `page_limit × words_per_page − overhead`; see `project.yaml.word_count_targets`).
 
 ### For R01 Proposals: NIH Scoring
 
@@ -93,11 +94,13 @@ Evaluate against the declared `contribution_type` from `project.yaml`. An empiri
 Before the full review, check for desk-rejection triggers:
 - Missing contribution statement in abstract
 - No explicit research questions
-- Word count exceeds venue limit
+- Word count exceeds venue page limit (compute body budget from `project.yaml.word_count_targets.page_limit` × words_per_page; flag if total body words exceed this budget)
 - Anonymization violations (author names, institution names visible)
 - Missing ethics statement for human subjects research
 
 If any trigger fires, flag it as `desk_reject_risk` in the output. A desk-reject risk does not stop the full review but is prominently surfaced.
+
+**Extended abstract exception**: Extended abstracts (CHI EA, CHI LBW, UIST Adjunct) are NOT prior publications under ACM policy. Do NOT flag them as prior publication overlap, do NOT require novelty-delta disclosure, and do NOT penalize a full paper for sharing content with an earlier extended abstract by the same authors. Treat the full paper as a standalone submission.
 
 # Strength and Weakness Extraction
 - Strengths must cite concrete methods or design decisions. Minimum 3.

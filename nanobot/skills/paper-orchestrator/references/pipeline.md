@@ -60,6 +60,13 @@ This document defines the 8 canonical pipeline phases for `paper-orchestrator`.
 - `phase_status.init = complete`.
 - `current_phase = literature`.
 
+**Entry validation (mid-pipeline)**
+To enter this phase directly (skipping prior phases):
+- Required files: `paper_project.yaml`, `state.json` (initialized)
+- state.json: `current_phase` set to `literature`, `phase_status.init` marked `complete` or `skipped`
+- Auto-setup: Run init workspace scaffolding (create subdirectories, `findings_memory.json`, populate `writing_parallel`)
+- Validation: Rarely entered mid-pipeline. If literature is itself skipped, set `phase_status.literature: skipped` — downstream writers will proceed without `references.json`
+
 **Agent(s)**
 - `literature` × N in parallel (one per domain tag in `paper_project.yaml.domain_tags`).
 
@@ -107,6 +114,13 @@ This document defines the 8 canonical pipeline phases for `paper-orchestrator`.
 - `phase_status.literature = complete`.
 - `current_phase = outline`.
 
+**Entry validation (mid-pipeline)**
+To enter this phase directly (skipping prior phases):
+- Required files: `literature/references.json` OR literature phase skipped; `paper_project.yaml`, `state.json`
+- state.json: `current_phase` set to `outline`, `phase_status.init` and `phase_status.literature` marked `complete` or `skipped`
+- Auto-setup: If `literature/references.json` is absent, set `phase_status.literature: skipped` so writers know no references exist
+- Validation: Verify `paper_project.yaml.sections` is non-empty and `writing_parallel` is populated
+
 **Agent(s)**
 - `writer-integrator`.
 
@@ -144,6 +158,13 @@ This document defines the 8 canonical pipeline phases for `paper-orchestrator`.
 **Entry criteria**
 - `phase_status.outline = complete`.
 - `current_phase = writing`.
+
+**Entry validation (mid-pipeline)**
+To enter this phase directly (skipping prior phases):
+- Required files: `docs/outline.md`, `paper_project.yaml`, `state.json`
+- state.json: `current_phase` set to `writing`, prior phases (`init`, `literature`, `outline`) marked `complete` or `skipped`
+- Auto-setup: If user provided an outline, copy it to `docs/outline.md`. If entering from a draft import, auto-generate outline from draft section headers
+- Validation: `docs/outline.md` must cover all sections from `paper_project.yaml.sections`; `writing_parallel` must be populated
 
 **Agent(s)**
 - `writer-integrator` (integrative sections + assembly)
@@ -197,6 +218,13 @@ This document defines the 8 canonical pipeline phases for `paper-orchestrator`.
 - `phase_status.writing = complete`.
 - `current_phase = figures`.
 
+**Entry validation (mid-pipeline)**
+To enter this phase directly (skipping prior phases):
+- Required files: `docs/drafts/paper_draft_v1.md` (or `paper_draft_v0.md` from import), `paper_project.yaml`, `state.json`
+- state.json: `current_phase` set to `figures`, phases 1–4 marked `complete` or `skipped`, `writing_parallel` populated from draft section headers
+- Auto-setup: Most common skip-to when user has a complete draft but needs figures. Populate `writing_parallel` by parsing section headers from the existing draft
+- Validation: Draft file must exist and contain at least the sections listed in `paper_project.yaml.sections`
+
 **Agent(s)**
 - `figures`.
 
@@ -235,6 +263,13 @@ This document defines the 8 canonical pipeline phases for `paper-orchestrator`.
 - `phase_status.writing = complete`.
 - `phase_status.figures = complete`.
 - `current_phase = review`.
+
+**Entry validation (mid-pipeline)**
+To enter this phase directly (skipping prior phases):
+- Required files: `docs/drafts/paper_draft_v1.md` (or `paper_draft_v0.md` from import), `paper_project.yaml`, `state.json`
+- state.json: `current_phase` set to `review`, phases 1–5 marked `complete` or `skipped`, `writing_parallel` populated from draft section headers
+- Auto-setup: **This is the MOST COMMON mid-pipeline entry** — user provides existing draft for review. Parse draft section headers to populate `state.json.writing_parallel`. If figures phase is skipped, set `phase_status.figures: skipped`
+- Validation: Draft file must exist; `writing_parallel` must have entries for all sections in `paper_project.yaml.sections`
 
 **Agent(s)**
 - Parallel: `reviewer-{domain}` for each domain in `paper_project.yaml.domain_tags`
@@ -281,6 +316,13 @@ This document defines the 8 canonical pipeline phases for `paper-orchestrator`.
 - Review recommends revision.
 - `review_round < max_review_rounds`.
 - `current_phase = revision`.
+
+**Entry validation (mid-pipeline)**
+To enter this phase directly (skipping prior phases):
+- Required files: `reviews/panel_decision_r{N}.json` OR user-provided reviewer comments file, `docs/drafts/paper_draft_v{N}.md`, `paper_project.yaml`, `state.json`
+- state.json: `current_phase` set to `revision`, phases 1–6 marked `complete` or `skipped`, `review_round` set appropriately
+- Auto-setup: For actual R&R, set `revision.mode: "actual"` and `revision.reviewer_comments_path` in `paper_project.yaml`. Create `reviews/findings_memory.json` if absent
+- Validation: Either `panel_decision_r{N}.json` exists or `reviewer_comments_path` points to a valid file; draft must exist
 
 **Agent(s)**
 - `reviser`.
@@ -347,6 +389,13 @@ This document defines the 8 canonical pipeline phases for `paper-orchestrator`.
 **Entry criteria**
 - Review passes (accept recommendation) OR user accepts current quality OR actual R&R revision approved.
 - `current_phase = export`.
+
+**Entry validation (mid-pipeline)**
+To enter this phase directly (skipping prior phases):
+- Required files: `docs/drafts/paper_draft_v{N}.md` at final revision, `paper_project.yaml`, `state.json`
+- state.json: `current_phase` set to `export`, all prior phases marked `complete` or `skipped`
+- Auto-setup: Rarely entered mid-pipeline. Ensure `figures/exports/` contains any referenced figures; create `export/` directory if absent
+- Validation: Final draft must exist with no unresolved placeholders; if actual R&R mode, `reviews/response_letter_r{N}.md` must also exist
 
 **Agent(s)**
 - Orchestrator (assembly + anonymization check)

@@ -153,6 +153,10 @@ sections:
 word_count_targets:
   total: 9000
   abstract: 150
+  # Page budget enforcement: page_limit × words_per_page drives all agent budget checks.
+  # Words-per-page by format: acm-double-column ≈ 650, acm-single-column ≈ 900, ieee-double-column ≈ 750.
+  page_limit: 10                     # venue page limit (excluding references)
+  format: "acm-double-column"        # "acm-double-column" | "acm-single-column" | "ieee-double-column"
 
 # ---------------------------------------------------------------------------
 # Review Configuration
@@ -246,3 +250,25 @@ seed_references:
 # Relative to the shared workspace root, or an absolute path.
 # ---------------------------------------------------------------------------
 prior_examples_path: null          # e.g. "PriorPaperExamples/CHI/" or absolute path
+
+# ---------------------------------------------------------------------------
+# Mid-Pipeline Entry (Draft Import)
+# Set these fields when providing an existing draft instead of starting from
+# scratch. The orchestrator will skip earlier phases and enter at the
+# specified phase. Leave both null for a fresh pipeline run.
+#
+# resume_from_phase: The phase to enter directly. Valid values:
+#   "literature" | "outline" | "writing" | "figures" | "review" | "revision" | "export"
+#   Most common: "review" (user provides existing draft for review/revision).
+#
+# existing_draft_path: Path to the existing paper draft (PDF or Markdown).
+#   The orchestrator extracts text, analyzes section structure, and saves it
+#   as docs/drafts/paper_draft_v0.md. PDF files are extracted via PyMuPDF.
+#   Relative to the project directory, or an absolute path.
+#
+# review_scope: Optional list of section titles to limit review/revision to.
+#   If null or empty, all sections are reviewed. Example: ["Introduction", "Related Work"]
+# ---------------------------------------------------------------------------
+resume_from_phase: null            # null (fresh run) | "review" | "revision" | etc.
+existing_draft_path: null          # null | "draft.pdf" | "/absolute/path/to/paper.pdf"
+review_scope: null                 # null (all sections) | ["Introduction", "Related Work"]

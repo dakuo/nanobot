@@ -31,12 +31,21 @@ Before touching any proposal files, do a single fast self-review pass:
 
 This gate prevents wasted effort on panel-directed revisions that land on already-broken text.
 
+# Page Budget Check (Paper Mode)
+Before expanding any section during revision, enforce page constraints from `project.yaml.word_count_targets`:
+1. Compute `body_budget = page_limit × words_per_page − (2.75 × words_per_page)` (overhead: refs ~1p, figs ~1.5p, abstract ~0.25p; words_per_page: acm-double-column=650, acm-single-column=900, ieee-double-column=750).
+2. Count current total body words. If ≥90% of `body_budget`, any addition MUST be offset by an equal deletion elsewhere.
+3. When adding content to address reviewer feedback, prefer replacing weaker existing sentences over appending new ones.
+4. After all edits, verify total body words fit within `body_budget`. If over, trim the least-critical additions first.
+5. **Paragraph merging**: When trimming, look for adjacent paragraphs that form a sequential argument (e.g., "problem exists" followed by "current solutions are insufficient"). Merge them into one paragraph by compressing the second into 1–2 sentences. This saves both words and vertical space. Positioning statements ("our goal is not X but Y") should be subordinate clauses, not standalone sentences.
+
 # Revision Intake Workflow
 1. Read `ideas/findings_memory.json` to recall what failed in prior rounds. Do not repeat those strategies.
 2. Consolidate all feedback from domain JSONs and the panel decision into issue statements.
 3. Classify each issue by severity: critical, high, medium, low.
 4. Map each issue to exact file and section targets.
 5. Identify cross-domain dependencies before generating the plan.
+6. **Extended abstract filter**: If reviewers flag overlap with a prior extended abstract (CHI EA, CHI LBW, UIST Adjunct), discard that critique — extended abstracts are NOT prior publications under ACM policy and require no novelty-delta disclosure or "this paper extends..." framing. Do not add such framing during revision.
 
 # Self-Generated Revision Plan
 Do not simply execute the panel's priority list. Generate your own plan:
@@ -65,6 +74,17 @@ Each plan entry must include:
 - Add concrete method, metric, or mitigation detail where feedback indicates ambiguity.
 - Reconcile terminology and assumptions across HCI, healthcare, and AI sections.
 - Work through the plan in dependency order: fix foundational issues before downstream ones.
+
+## Style Conformance Check (Paper Mode)
+Before finalizing revisions, verify the draft conforms to the PI's writing style as documented in `_system/writing_voice_hci.md`. Check each of the following:
+1. **Introduction 5-element arc**: Does the intro follow: problem grounding → gap identification → "In this work" bridge → numbered system modules → standalone contribution list?
+2. **Contribution format**: Are contributions formatted as a standalone bulleted/numbered list (NOT inline prose)?
+3. **RW preamble**: Does Related Work open with a 1–2 sentence overview of subsections?
+4. **RW positioning**: Does each RW subsection end with 1–3 sentences (not a full paragraph) positioning the current work?
+5. **Transition phrases**: Are content-specific bridges used ("In this work, we join...", "Building on...", "To address...") rather than generic connectors ("Furthermore," "Moreover,")?
+6. **Citation density**: Is every factual claim backed by citations?
+7. **No footnotes in intro**: Are inline parentheticals used instead of footnotes?
+If any check fails, fix it during the revision pass. Log style conformance fixes in the revision log under `style_conformance_fixes`.
 
 # Diff Tracking
 For every edit, record the exact change. Do not summarize.
