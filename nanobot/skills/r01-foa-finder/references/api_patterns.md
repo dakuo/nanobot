@@ -22,11 +22,11 @@ for h in d['data']['oppHits']:
 ```
 
 - Replace `{KEYWORDS}` with topic phrase (e.g., `"clinical informatics"`)
-- Do NOT add `agencies` or `fundingCategories` filters — they break NIH results
+- Do NOT add `agencies` or `fundingCategories` filters, they break NIH results
 - The python filter keeps only NIH results and outputs a compact pipe-delimited format
 - Output format: `FOA_NUMBER|TITLE|CLOSE_DATE|ALN_LIST|GRANTS_GOV_ID|STATUS`
 
-**IMPORTANT**: The `exec` tool truncates output at 10,000 characters. Raw JSON responses are 18-27K chars and WILL be truncated, causing you to miss FOAs. Always use the python post-processing pipe shown above — it reduces output to ~3-8K chars (safe).
+**IMPORTANT**: The `exec` tool truncates output at 10,000 characters. Raw JSON responses are 18-27K chars and WILL be truncated, causing you to miss FOAs. Always use the python post-processing pipe shown above, it reduces output to ~3-8K chars (safe).
 
 ### CFDA/ALN Search (by institute)
 
@@ -45,9 +45,9 @@ for h in d['data']['oppHits']:
 ```
 
 - Replace `{ALN_NUMBER}` with the ALN for the target IC (e.g., `"93.879"` for NLM)
-- Returns ALL active FOAs from that institute — no keyword filtering needed
+- Returns ALL active FOAs from that institute, no keyword filtering needed
 - Use ALN→IC table below to pick the right number
-- The python pipe is REQUIRED — raw JSON for CFDA searches exceeds the 10K truncation limit
+- The python pipe is REQUIRED, raw JSON for CFDA searches exceeds the 10K truncation limit
 
 ### Exact FOA Number Lookup
 
@@ -112,7 +112,7 @@ curl -s -X POST 'https://api.reporter.nih.gov/v2/projects/search' \
 ```
 
 - Replace `{TOPIC_KEYWORDS}` with topic phrase
-- Do NOT include `agencies` filter in the first search — let results reveal which ICs fund this topic
+- Do NOT include `agencies` filter in the first search, let results reveal which ICs fund this topic
 - After discovering top ICs, optionally run a second search with `"agencies": ["{IC}"]`
 
 ### Search by FOA Number (reverse lookup)
@@ -186,7 +186,7 @@ https://files.simpler.grants.gov/opportunities/.../.../{FOA_NUMBER}-Full-Announc
 https://www.grants.gov/search-results-detail/{GRANTS_GOV_ID}
 ```
 
-Replace `{GRANTS_GOV_ID}` with the `id` field from the search2 response. Note: this is a JavaScript-rendered page — `web_fetch` may return limited content. Use it only if sources 1 and 2 fail.
+Replace `{GRANTS_GOV_ID}` with the `id` field from the search2 response. Note: this is a JavaScript-rendered page, `web_fetch` may return limited content. Use it only if sources 1 and 2 fail.
 
 ---
 
@@ -244,7 +244,7 @@ The 2-letter code in targeted FOA numbers (e.g., PAR-**LM**-26-001) maps to the 
 | HD | NICHD |
 | OD | OD |
 
-Note: NIH-wide FOAs (PA-25-301, PAR-25-235) do NOT contain an IC prefix — the issuing/participating ICs are listed in the FOA body text.
+Note: NIH-wide FOAs (PA-25-301, PAR-25-235) do NOT contain an IC prefix, the issuing/participating ICs are listed in the FOA body text.
 
 ---
 

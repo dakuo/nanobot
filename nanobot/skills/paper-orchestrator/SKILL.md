@@ -1,6 +1,6 @@
 ---
 name: paper-orchestrator
-description: "Central orchestrator for academic paper writing and revision. Manages multi-phase pipeline from literature review to export with parallel domain-specialized writers and reviewers. Supports CHI, CSCW, UIST, UbiComp/IMWUT, DIS venues. Triggers: 'write paper', 'new paper', 'resume paper', 'paper status', 'run paper pipeline', 'revise paper', 'respond to reviews'."
+description: "Central orchestrator for academic paper writing and revision. Manages multi-phase pipeline from literature review to export with parallel domain-specialized writers and reviewers. Supports CHI, CSCW, UIST, UbiComp/IMWUT, DIS venues. Triggers: 'write paper', 'new paper', 'resume paper', 'paper status', 'run paper pipeline', 'revise paper', 'respond to reviews', 'write section', 'edit section', 'write introduction', 'write related work', 'write method', 'write discussion', 'edit draft', 'improve section', 'rewrite section', 'review section', 'write for {project}', 'edit {section} for {project}'."
 ---
 
 # Overview
@@ -10,6 +10,85 @@ The paper orchestrator drives a state-machine pipeline that reads `state.json`, 
 1. Copy `~/Dropbox/AgentWorkspace/PaperAutoGen/_templates/paper_project.yaml` and `paper_state.json` into `~/Dropbox/AgentWorkspace/PaperAutoGen/chi-{paper-name}/`.
 2. Edit `paper_project.yaml` for paper metadata, venue, contribution type, sections, and domain tags.
 3. Tell the agent: `Write paper for chi-{paper-name}`.
+
+# Mandatory Delegation Rule (NEVER SKIP)
+**You MUST NEVER write, edit, or revise academic paper content directly as the main agent.** Every writing, editing, or revision task MUST be delegated to a spawned subagent with the appropriate writer or reviewer skill loaded.
+
+This applies to ALL scenarios:
+- Full pipeline runs (Phases 1-8)
+- Ad-hoc single-section writing (user asks "write the related work")
+- Draft edits (user asks "improve introduction_v4.md")
+- Section rewrites (user asks "rewrite the discussion")
+- Review tasks (user asks "review this draft")
+
+## Writer Routing Table
+Use the following table to determine which subagent to spawn. Read `paper_project.yaml.domain_tags` to determine the domain count.
+
+### Single-Domain Papers (one domain_tag, e.g., `[hci]`)
+| Section | Spawn Agent | Skill to Read |
+|---|---|---|
+| introduction | writer-{domain} | `nanobot/skills/writer-{domain}/SKILL.md` |
+| related_work | writer-{domain} | `nanobot/skills/writer-{domain}/SKILL.md` |
+| method / system / study / findings / evaluation | writer-{domain} | `nanobot/skills/writer-{domain}/SKILL.md` |
+| discussion | writer-{domain} | `nanobot/skills/writer-{domain}/SKILL.md` |
+| conclusion | writer-{domain} | `nanobot/skills/writer-{domain}/SKILL.md` |
+| abstract + final assembly | writer-integrator | `nanobot/skills/writer-integrator/SKILL.md` |
+
+For single-domain papers, the domain writer handles ALL content sections because it has the domain-specific voice, citation conventions, and framing expertise. The integrator only handles final assembly and abstract.
+
+### Multi-Domain Papers (2+ domain_tags, e.g., `[hci, ai]`)
+| Section | Spawn Agent | Skill to Read |
+|---|---|---|
+| introduction | writer-integrator | `nanobot/skills/writer-integrator/SKILL.md` |
+| related_work | **domain writers → writer-integrator** | See Related Work Multi-Domain Workflow below |
+| domain-specific sections | writer-{section.domain_tag} | `nanobot/skills/writer-{domain}/SKILL.md` |
+| discussion | writer-integrator | `nanobot/skills/writer-integrator/SKILL.md` |
+| conclusion | writer-integrator | `nanobot/skills/writer-integrator/SKILL.md` |
+| abstract + final assembly | writer-integrator | `nanobot/skills/writer-integrator/SKILL.md` |
+
+For multi-domain papers, the integrator handles cross-cutting sections that synthesize across domains. The integrator MUST read all domain voice files (`writing_voice_{domain}.md`) before writing any cross-cutting section.
+
+#### Related Work Multi-Domain Workflow
+For multi-domain papers, Related Work uses a **parallel-first → consolidation** workflow because RW subsections typically map to distinct domains:
+
+1. **Identify RW subsections** from `docs/outline.md`. Map each subsection to a domain_tag based on content (e.g., "Usability Testing Challenges" → hci, "LLM Reasoning Architectures" → ai).
+2. **Spawn domain writers in parallel**: For each domain-mapped subsection, spawn the corresponding `writer-{domain}` subagent to write that subsection. Each domain writer brings specialized voice, citation conventions, and framing expertise.
+3. **Spawn writer-integrator for consolidation**: After all domain writers complete, spawn `writer-integrator` with the domain outputs. The integrator:
+   - Writes the RW preamble sentence previewing subsection structure
+   - Adds transitions between subsections
+   - Writes positioning sentences at the end of each subsection
+   - Resolves terminology conflicts across domain drafts
+   - Ensures the RW reads as one coherent narrative, not stitched fragments
+4. **Output**: A single `related_work_v{N}.md` file.
+
+If a subsection spans multiple domains (e.g., "LLM Simulation of Human Behavior" spans both AI and HCI), assign it to the **primary domain** and instruct that writer to consult the secondary domain's voice file.
+
+### Reviewer Routing
+| Task | Spawn Agent | Skill to Read |
+|---|---|---|
+| HCI review | reviewer-hci | `nanobot/skills/reviewer-hci/SKILL.md` |
+| AI review | reviewer-ai | `nanobot/skills/reviewer-ai/SKILL.md` |
+| Healthcare review | reviewer-healthcare | `nanobot/skills/reviewer-healthcare/SKILL.md` |
+| Panel synthesis | reviewer-panel | `nanobot/skills/reviewer-panel/SKILL.md` |
+
+# Ad-Hoc Writing Requests
+When the user asks to write, edit, or revise a specific section (outside the formal pipeline):
+
+1. Identify which project the request is for (from user context or ask).
+2. Read `paper_project.yaml` from the project directory to determine `domain_tags`.
+3. Use the Writer Routing Table above to select the correct subagent.
+4. Spawn with the following template:
+
+```
+spawn(
+  task="You are a {role} subagent. Read the {skill_name} skill at {skill_path} and follow its instructions.\n\nPROJECT: {project_path}\nDOCUMENT_TYPE: paper\nVENUE: {venue}\nCONTRIBUTION_TYPE: {contribution_type}\nTASK: {user_request}\nSECTION: {section_name}\nINPUT FILE: {existing_draft_path_if_any}\nOUTPUT FILE: {output_path}\n\nMANDATORY READS (do ALL of these BEFORE writing any prose):\n- Project config: {project_path}/paper_project.yaml\n- Writing voice: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/writing_voice.md (READ the 'Forbidden Sentence Structures' section — these are ABSOLUTE BANS)\n- HCI writing voice: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/writing_voice_hci.md\n- Style guide: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/chi_style_guide.md\n- Literature: {project_path}/literature/references.json (if exists)\n- User input: {project_path}/docs/user_input.md (if exists)\n\nPOST-GENERATION SCAN (do AFTER writing, BEFORE delivering):\n- Scan output for em-dashes (—) — if found, rewrite those sentences\n- Scan for 'is not to' / 'is not X but' patterns — if found, rewrite to state positive purpose directly\n- Scan for trailing participial phrases (', verb-ing') — if found, split into separate sentences\n- Scan for comma+gerund (', having') — if found, restructure\n\nINSTRUCTIONS:\n1. Read the skill file first.\n2. Read ALL mandatory files listed above — especially writing_voice.md Forbidden Sentence Structures.\n3. Read the existing draft (if any) to understand current state.\n4. {specific_task_instructions}\n5. Run the post-generation scan on your output.\n6. Write output to the specified file.",
+  label="{section_name}-{action}",
+  max_iterations=30,
+  workspace="{project_path}"
+)
+```
+
+If the user asks to edit an existing file, the spawned subagent reads the file, applies changes, and writes back. If the user asks to write a new section, the subagent creates the file from scratch following the skill guidelines.
 
 # Pipeline Phases
 | Phase | Agent assignment |
@@ -41,19 +120,19 @@ When a user provides an existing paper draft instead of starting from scratch, t
 
 ## Trigger Detection
 Detect mid-pipeline entry when the user's message matches any of these patterns:
-- **"revise this paper"** — user provides a full or partial draft (PDF or text) and wants revision feedback.
-- **"review my paper"** — user provides a draft and wants simulated peer review without prior pipeline phases.
-- **"improve this draft"** — user provides text and wants iterative improvement (enters review → revision loop).
-- **"resume paper for {project-name}"** — user wants to continue an existing pipeline that was interrupted.
-- **"continue paper pipeline"** — same as resume; orchestrator reads `state.json` from the most recent project or the project specified.
+- **"revise this paper"**: user provides a full or partial draft (PDF or text) and wants revision feedback.
+- **"review my paper"**: user provides a draft and wants simulated peer review without prior pipeline phases.
+- **"improve this draft"**: user provides text and wants iterative improvement (enters review → revision loop).
+- **"resume paper for {project-name}"**: user wants to continue an existing pipeline that was interrupted.
+- **"continue paper pipeline"**: same as resume; orchestrator reads `state.json` from the most recent project or the project specified.
 
 If the user's message contains one of these trigger phrases AND either attaches a file (PDF/text) or references an existing project directory, enter mid-pipeline mode instead of Phase 1: Init.
 
 ## Draft Analysis
 When the user provides a draft (PDF attachment, pasted text, or file path), extract the following before creating the workspace:
 
-1. **Venue**: Scan for venue identifiers in the text — ACM template markers (`\acmConference`, `sigchi-a` class), explicit venue mentions ("submitted to CHI 2026"), or formatting cues (ACM CCS concepts, single-column vs. two-column). If no venue is detectable, ask the user. Do not guess.
-2. **Contribution type**: Infer from section structure and content — empirical papers have "Findings"/"Results" sections with statistical language; artifact papers have "System Design"/"Implementation"; methodological papers have "Method"/"Framework" as primary sections; surveys have "Taxonomy"/"Classification". Map to one of: empirical, artifact, methodological, theoretical, survey, opinion, benchmark.
+1. **Venue**: Scan for venue identifiers in the text, including ACM template markers (`\acmConference`, `sigchi-a` class), explicit venue mentions ("submitted to CHI 2026"), or formatting cues (ACM CCS concepts, single-column vs. two-column). If no venue is detectable, ask the user. Do not guess.
+2. **Contribution type**: Infer from section structure and content. Empirical papers have "Findings"/"Results" sections with statistical language; artifact papers have "System Design"/"Implementation"; methodological papers have "Method"/"Framework" as primary sections; surveys have "Taxonomy"/"Classification". Map to one of: empirical, artifact, methodological, theoretical, survey, opinion, benchmark.
 3. **Section structure**: Parse all top-level headings (H1/H2) and their approximate word counts. Map each heading to the canonical section names used in the pipeline: `abstract`, `introduction`, `related_work`, `method`, `system`, `study`, `findings`, `discussion`, `conclusion`, `acknowledgments`. Flag any non-standard sections for user confirmation.
 4. **Research questions / contributions**: Extract explicitly stated RQs (lines starting with "RQ1:", "Research Question", or bold/italic question formats) and contribution lists (typically in the introduction, often as numbered items after "contributions of this paper" or similar phrasing). Store these in `docs/extracted_rqs.md`.
 5. **Existing references**: If the draft contains a bibliography or reference list, extract it to `literature/references_imported.json` in the same schema as `literature/references.json`. Set `source: "imported"` on each entry to distinguish from pipeline-generated references.
@@ -112,7 +191,7 @@ Spawn N literature agents in parallel (one per `domain_tag` in `paper_project.ya
    - Each reads `literature` skill and is assigned one domain.
    - Task prompt must include `DOCUMENT_TYPE: paper` so the agent calibrates search scope for paper-length references (not grant-length).
    - Each agent runs multi-round search, snowball sampling via Semantic Scholar citation graph, and produces claim-evidence mappings.
-4. **State tracking**: same pattern as all spawns — update `state.json` before/after each spawn, append events.
+4. **State tracking**: same pattern as all spawns. Update `state.json` before/after each spawn, append events.
 5. When all domain searches complete:
    - Merge `literature/references_{domain}.json` files into `literature/references.json`.
    - Deduplicate by DOI/URL, keeping highest-priority annotations.
@@ -133,6 +212,16 @@ Spawn `writer-integrator` with paper mode:
 # Phase 4: Writing (Parallel Dispatch)
 
 ## Batching Strategy
+
+**Routing depends on domain count.** Read `paper_project.yaml.domain_tags` first.
+
+### Single-Domain Papers (1 domain_tag)
+| Batch | Agent | Sections | Parallel? |
+|-------|-------|----------|-----------|
+| A | writer-{domain} | ALL content sections: introduction, related_work, method/system, discussion, conclusion | Yes |
+| F | writer-integrator | abstract + merge all into paper_draft_v1.md | After A completes |
+
+### Multi-Domain Papers (2+ domain_tags)
 | Batch | Agent | Sections | Parallel? |
 |-------|-------|----------|-----------|
 | A | writer-integrator | introduction, related_work, discussion, conclusion | Yes (with B..N) |
@@ -175,7 +264,7 @@ REQUIRED INPUTS (read these before writing):
 
 INSTRUCTIONS:
 1. Read the skill file first for your role and quality standards.
-2. Read outline.md and locate YOUR assigned section(s) — use the heading structure and word targets there.
+2. Read outline.md and locate YOUR assigned section(s). Use the heading structure and word targets there.
 3. Read references.json and gaps.md to incorporate citations and address gaps.
 4. Read docs/user_input.md (if present) for the user's preferred framing, positioning language, and system description.
 5. Write each section to its output file. Use markdown with proper heading hierarchy.
@@ -185,7 +274,7 @@ INSTRUCTIONS:
 9. CROSS-CHECK: If your section describes system components/modules, verify the count and names match outline.md and user_input.md exactly. Do not omit components.
 ```
 
-Do NOT ask the subagent to update state.json — the orchestrator tracks completion externally.
+Do NOT ask the subagent to update state.json. The orchestrator tracks completion externally.
 
 # Phase 5: Figures
 Spawn `figures` skill:
@@ -212,6 +301,15 @@ Spawn N domain reviewers matching `paper_project.yaml.domain_tags`:
 7. Panel appends `findings_memory_entry` to `reviews/findings_memory.json`.
 8. If recommendation is not "accept" and `review_round < max_review_rounds`, route to revision.
 
+## Minimum Review Rounds Policy
+**The pipeline MUST complete at least 2 full review→revision cycles before presenting results to the user at a checkpoint.** This applies to ALL writing and revision tasks, whether full-paper or scoped to specific sections. The rationale: Round 1 catches obvious issues; Round 2 stress-tests the fixes and catches second-order problems introduced by the revision. Only after Round 2 (or later) should the orchestrator pause for user feedback.
+
+- `min_review_rounds`: 2 (hardcoded, not configurable)
+- `max_review_rounds`: read from `project.yaml` (default 3)
+- After Round 1 revision completes → automatically route back to Phase 6 (review) without user checkpoint.
+- After Round 2 revision completes → present to user at checkpoint. If `review_round < max_review_rounds` and user requests further revision, continue.
+- Do NOT insert a `checkpoint_wait` event before `review_round >= min_review_rounds`.
+
 # Phase 7: Revision
 Two modes based on `paper_project.yaml.revision.mode`:
 
@@ -232,11 +330,11 @@ When the user has received real reviewer comments from a venue:
    - Revised paper with tracked changes at `docs/drafts/paper_draft_v{N+1}.md`.
    - Change summary for latexdiff at `reviews/change_summary_r{N}.md`.
 5. User reviews response letter + revision at checkpoint.
-6. User can iterate (multiple R&R rounds — especially for CSCW which allows 2+ rounds).
+6. User can iterate (multiple R&R rounds, especially for CSCW which allows 2+ rounds).
 7. Each round increments N and produces new response letter + revised draft.
 
 # Phase 8: Export + Evolution
-1. Run anonymization final check — read `references/anonymization_checklist.md` and verify compliance:
+1. Run anonymization final check. Read `references/anonymization_checklist.md` and verify compliance:
    - Author names removed from all document text.
    - Self-citations use third-person or [Anonymous Year].
    - No institutional affiliations in acknowledgments.
@@ -298,8 +396,8 @@ When user triggers actual R&R:
 - Never access files outside these two roots.
 
 # References
-- `references/pipeline.md` — Full phase contracts and transitions
-- `references/chi_paper_structures.md` — Section templates per contribution type
-- `references/venue_review_criteria.md` — Venue-specific scoring and review dimensions
-- `references/anonymization_checklist.md` — Double-blind compliance checklist
-- `references/response_letter_guide.md` — R&R response letter format and best practices
+- `references/pipeline.md`: Full phase contracts and transitions
+- `references/chi_paper_structures.md`: Section templates per contribution type
+- `references/venue_review_criteria.md`: Venue-specific scoring and review dimensions
+- `references/anonymization_checklist.md`: Double-blind compliance checklist
+- `references/response_letter_guide.md`: R&R response letter format and best practices

@@ -19,19 +19,19 @@ Extract reusable lessons from completed projects (R01 proposals or academic pape
 After the orchestrator completes the export phase for any project, it spawns this agent to analyze what happened and extract patterns.
 
 ## Trigger 2: User Feedback Processing (manual)
-When the user provides feedback on a completed proposal — either their own assessment or actual NIH reviewer feedback — this agent processes it into structured updates.
+When the user provides feedback on a completed proposal, either their own assessment or actual NIH reviewer feedback, this agent processes it into structured updates.
 
 ## Trigger 3: Real NIH Reviewer Feedback (manual)
 When the user receives a Summary Statement from NIH, this agent parses the critique text and extracts scored patterns.
 
 # Inputs
 - **Project workspace**: `~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/`
-  - `reviews/panel_decision_r{N}.json` — panel scores and priorities
-  - `reviews/review_{domain}_r{N}.json` — domain-specific critique items
-  - `reviews/revision_diffs_r{N}.json` — what was changed and why
-  - `ideas/findings_memory.json` — cumulative findings across revision rounds
-  - `state.json` — phase completion and round history
-  - `feedback/` — user-provided feedback files (text, markdown, or JSON)
+  - `reviews/panel_decision_r{N}.json`, panel scores and priorities
+  - `reviews/review_{domain}_r{N}.json`, domain-specific critique items
+  - `reviews/revision_diffs_r{N}.json`, what was changed and why
+  - `ideas/findings_memory.json`, cumulative findings across revision rounds
+  - `state.json`, phase completion and round history
+  - `feedback/`, user-provided feedback files (text, markdown, or JSON)
 - **System files** (read+write):
   - `~/Dropbox/AgentWorkspace/PaperAutoGen/_system/reviewer_patterns.json`
   - `~/Dropbox/AgentWorkspace/PaperAutoGen/_system/style_guide.md`
@@ -39,27 +39,27 @@ When the user receives a Summary Statement from NIH, this agent parses the criti
 
 # Step 1: Gather Project Evidence
 Read the following files from the completed project:
-1. All `reviews/panel_decision_r*.json` files — extract scores, consensus strengths, consensus weaknesses, and disagreements.
-2. All `reviews/review_*_r*.json` files — extract `critique_items` with their severity and frequency.
-3. All `reviews/revision_diffs_r*.json` files — understand what changes were effective.
-4. `ideas/findings_memory.json` — read the `effective_strategies` and `ineffective_strategies` from each round.
-5. Any files in `feedback/` — user or real NIH reviewer comments.
+1. All `reviews/panel_decision_r*.json` files, extract scores, consensus strengths, consensus weaknesses, and disagreements.
+2. All `reviews/review_*_r*.json` files, extract `critique_items` with their severity and frequency.
+3. All `reviews/revision_diffs_r*.json` files, understand what changes were effective.
+4. `ideas/findings_memory.json`, read the `effective_strategies` and `ineffective_strategies` from each round.
+5. Any files in `feedback/`, user or real NIH reviewer comments.
 
 # Step 2: Identify Patterns
 Analyze the gathered evidence to identify three categories of patterns:
 
 ## 2a: Weakness Patterns
 Recurring critiques that appeared across multiple review rounds or domains. Each weakness pattern must include:
-- **What the reviewers flagged** — specific concern (e.g., "missing power analysis", "vague AI method specification")
-- **Which section it affected** — map to R01 section (specific_aims, significance, innovation, approach)
-- **How severe it was** — based on panel priority and score impact
-- **How to prevent it** — concrete writing guidance for future proposals
+- **What the reviewers flagged**: specific concern (e.g., "missing power analysis", "vague AI method specification")
+- **Which section it affected**: map to R01 section (specific_aims, significance, innovation, approach)
+- **How severe it was**: based on panel priority and score impact
+- **How to prevent it**: concrete writing guidance for future proposals
 
 ## 2b: Strength Patterns
 Elements that received positive reviewer feedback. Each strength must include:
-- **What reviewers praised** — specific strength
+- **What reviewers praised**: specific strength
 - **Which section it appeared in**
-- **How to replicate it** — concrete guidance for future proposals
+- **How to replicate it**: concrete guidance for future proposals
 
 ## 2c: Revision Effectiveness
 Which revision strategies worked (moved scores up) and which didn't. Cross-reference `revision_diffs` with score changes between rounds.
@@ -67,13 +67,13 @@ Which revision strategies worked (moved scores up) and which didn't. Cross-refer
 ### For Academic Papers: Additional Pattern Categories
 When `document_type` is `paper`, also identify:
 
-**Venue-specific patterns** — different venues emphasize different criteria:
+**Venue-specific patterns**: different venues emphasize different criteria:
 - CHI reviewers prioritize novelty of interaction paradigm and user study rigor
 - CSCW reviewers focus on social/collaborative dimensions and ecological validity
 - UIST reviewers emphasize technical contribution and system performance
 - UbiComp/IMWUT reviewers value longitudinal deployment and real-world evaluation
 
-**Contribution-type patterns** — critiques cluster by paper type:
+**Contribution-type patterns**: critiques cluster by paper type:
 - Empirical papers: sample size concerns, ecological validity, generalizability
 - Artifact papers: insufficient evaluation, unclear design rationale, limited comparison to baselines
 - Methodological papers: insufficient validation, narrow applicability claims
@@ -93,7 +93,7 @@ Append new entries to the appropriate arrays. Follow the schema defined in the f
 - Never delete existing entries. Append only.
 - If a pattern already exists (match on `category` + `section` + similar description), increment its `frequency` and update `last_seen`.
 - New patterns get `frequency: 1` and `first_seen` set to today's ISO 8601 date.
-- Each pattern entry must have a concrete `mitigation` field — not "improve this" but "add a power analysis table showing sample size calculation for primary and secondary endpoints."
+- Each pattern entry must have a concrete `mitigation` field, not "improve this" but "add a power analysis table showing sample size calculation for primary and secondary endpoints."
 - Write domain-specific patterns to the appropriate `domain_specific.{hci|healthcare|ai}` section.
 
 ### For Academic Papers: Pattern Organization by Venue and Contribution Type
@@ -139,8 +139,8 @@ Append one entry per significant lesson learned. Follow the schema in the file.
 - `timestamp`: Current ISO 8601 datetime
 - `source`: One of `user_feedback`, `reviewer_feedback`, `self_reflection`
 - `project`: The project folder name
-- `lesson`: Specific and actionable — not "improve writing" but "Significance sections need stronger gap enumeration with explicit contrast between prior work limitations and our approach"
-- `action`: File path + description of what was changed (e.g., "reviewer_patterns.json — added pattern 'missing_power_analysis' to common_weaknesses")
+- `lesson`: Specific and actionable, not "improve writing" but "Significance sections need stronger gap enumeration with explicit contrast between prior work limitations and our approach"
+- `action`: File path + description of what was changed (e.g., "reviewer_patterns.json, added pattern 'missing_power_analysis' to common_weaknesses")
 - `approved_by`: `"user"` for style_guide changes, `"auto"` for reviewer_patterns and findings_memory updates
 
 **Never:**
@@ -157,7 +157,7 @@ When processing a new project's feedback, also read patterns from ALL prior proj
 
 ### Cross-Document-Type Pattern Transfer
 Aggregate patterns across both R01 and paper projects. Many critique patterns are transferable across document types:
-- "Weak methodology description" is a universal critique — applicable to both NIH Approach sections and paper Method sections
+- "Weak methodology description" is a universal critique, applicable to both NIH Approach sections and paper Method sections
 - "Insufficient related work coverage" maps to both R01 Significance and paper Related Work
 - "Vague evaluation plan" appears in both R01 Approach and paper Evaluation sections
 When a pattern appears in both R01 and paper projects, note it as `cross_document_type: true` and increase its priority for style guide promotion.
@@ -166,7 +166,7 @@ When a pattern appears in both R01 and paper projects, note it as `cross_documen
 
 When the orchestrator routes style feedback to this agent (from Checkpoint B or C):
 
-## 7a: Classify Feedback (Hybrid — Agent + User Override)
+## 7a: Classify Feedback (Hybrid. Agent + User Override)
 For each piece of feedback, determine:
 1. **Is it style or content?**
    - Style: voice, framing, word choice, sentence structure, argumentation pattern, hedging level
@@ -248,7 +248,7 @@ When the user provides actual CHI/CSCW/UIST/UbiComp reviewer comments:
    - CSCW uses SPC screening → external review → major revision cycles
    - Track patterns across R&R rounds: which concerns persisted, which were resolved
    - A concern that persists across 2+ rounds is automatically flagged as high-frequency
-   - Map SPC meta-review comments separately — SPC often synthesizes and adds new concerns not raised by individual reviewers
+   - Map SPC meta-review comments separately. SPC often synthesizes and adds new concerns not raised by individual reviewers
 
 ### For R01 Proposals: Processing Real NIH Reviewer Feedback
 
@@ -286,7 +286,7 @@ Every evolution run produces:
 
 # Quality Bar
 - Every pattern is specific enough to be actionable by a writer agent.
-- No vague entries like "improve methodology" — must specify what, where, and how.
+- No vague entries like "improve methodology", must specify what, where, and how.
 - All JSON files remain valid after updates.
 - Evolution log entries have complete required fields.
 - Cross-project pattern frequency counts are accurate.

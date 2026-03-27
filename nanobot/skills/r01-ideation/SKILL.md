@@ -22,8 +22,8 @@ Use `<THOUGHT>` and `<OUTPUT>` sections throughout. Perform all reasoning, compa
 # Prior Example Mining
 
 Before generating ideas, read these inputs:
-1. `docs/user_input.md` (if it exists) — the user's initial abstract or project description. This is the seed input and original author intent. In express mode, this IS the concept to adopt. In full mode, use it to inform topic direction and clinical context.
-2. Proposals in `PriorNIHR01Examples/` — extract structural patterns:
+1. `docs/user_input.md` (if it exists): the user's initial abstract or project description. This is the seed input and original author intent. In express mode, this IS the concept to adopt. In full mode, use it to inform topic direction and clinical context.
+2. Proposals in `PriorNIHR01Examples/`, extract structural patterns:
    - Rhetorical moves: how authors frame significance, justify innovation, position against the field.
    - Aim pattern types: mechanistic (test a causal pathway), implementation (deploy and evaluate), evaluation (measure outcomes of an intervention).
    - Risk framing patterns: contingency plans, milestone gates, external validation strategies.
@@ -36,7 +36,7 @@ Record extracted patterns in `<THOUGHT>` before proceeding to Step 1.
 If the user provides a fully-formed research concept with specific aims already defined (e.g., in `project.yaml` or as input text), use express mode instead of the full 5-branch divergent pipeline:
 
 1. **ADOPT**: Accept the user's concept as `branch-1`. Extract all Branch Requirements fields (see below) from the user's description. Fill in any missing fields with reasoned completions.
-2. **DEVELOP**: Run Step 2 (3-Round Reflection Loop) on `branch-1` only — structured generation, literature grounding, self-critique with quoted evidence. This sharpens the concept without replacing it.
+2. **DEVELOP**: Run Step 2 (3-Round Reflection Loop) on `branch-1` only, structured generation, literature grounding, self-critique with quoted evidence. This sharpens the concept without replacing it.
 3. **REFINE** (optional): Generate 1-2 alternative framings of the same core idea that vary the intervention mechanism or methodological approach. These are presented as variations, not replacements. Label them `branch-1a`, `branch-1b`.
 4. **FILTER + SCORE**: Run Step 3 (feasibility filter) and Step 4 (scoring) on all branches.
 5. **CHECKPOINT**: Present the developed `branch-1` (and any variations) to the user for confirmation. The user's original concept is the default selection.
@@ -77,18 +77,18 @@ Also generate for each branch:
 - specific_aims (2-4 with measurable endpoints and estimated timeline)
 - clinical_problem, target_users, hci_component, ai_component
 
-**Title guidance:** Titles must be concise and scannable by reviewers. Aim for 10-15 words maximum. Do not stack multiple descriptors or subclauses. Bad: "PREP-AI: Preparation Readiness and Engagement Platform using AI — Multimodal Home Monitoring for Colonoscopy Preparation Success Prediction and Intervention." Good: "AI-Driven Multimodal Monitoring to Improve Colonoscopy Preparation."
+**Title guidance:** Titles must be concise and scannable by reviewers. Aim for 10-15 words maximum. Do not stack multiple descriptors or subclauses. Bad: "PREP-AI: Preparation Readiness and Engagement Platform using AI. Multimodal Home Monitoring for Colonoscopy Preparation Success Prediction and Intervention." Good: "AI-Driven Multimodal Monitoring to Improve Colonoscopy Preparation."
 
 **Central hypothesis guidance:** The hypothesis must be falsifiable but should not include specific quantitative thresholds (e.g., "AUROC ≥ 0.80" or "≥ 30% reduction") unless grounded in pilot data or published benchmarks. Instead, state the directional claim and the measurable dimension. Bad: "will achieve AUROC ≥ 0.80 and reduce inadequate preparation by ≥ 30%." Good: "will significantly improve prediction of preparation failure beyond EHR-only baselines and enable timely interventions that reduce inadequate preparation rates."
 
-**Per-aim timeline estimation:** Each aim must include a realistic timeline estimate that fits within the R01's budget period (typically 5 years). Consider parallelization potential — some aims can overlap. When estimating scope (participant counts, data volumes, deployment phases), work backward from the timeline to determine what is feasible. Example:
+**Per-aim timeline estimation:** Each aim must include a realistic timeline estimate that fits within the R01's budget period (typically 5 years). Consider parallelization potential, some aims can overlap. When estimating scope (participant counts, data volumes, deployment phases), work backward from the timeline to determine what is feasible. Example:
 - HCI co-design and system implementation: ~1-1.5 years (Year 1 into Year 2)
 - Prospective data collection: ~1.5-2 years (Years 2-3, can overlap with late Aim 1)
 - Model development: ~1-1.5 years (Years 3-4, starts as Aim 2 data accumulates)
 - Pilot evaluation: ~1 year (Years 4-5)
 Record this in a `timeline_estimate` field per aim in the branch output.
 
-**Realistic scope for HCI co-design aims:** Iterative co-design cannot tolerate large participant pools — the depth of engagement per participant is high. Realistic ranges:
+**Realistic scope for HCI co-design aims:** Iterative co-design cannot tolerate large participant pools, the depth of engagement per participant is high. Realistic ranges:
 - Formative stakeholder interviews/contextual inquiry: 10-15 patients, 8-10 clinicians
 - Iterative design workshops: 6-10 participants per round, 2-3 rounds
 - Usability testing: 8-12 participants per round, 2-3 rounds
@@ -166,7 +166,7 @@ Also record the selection in `_system/ideation_preferences.json` under `selectio
 - `rejection_reasons`: if user stated reasons, record them per branch; otherwise null
 - `modifications_requested`: any changes the user requested before confirming
 
-If 3+ entries in `selection_history` show a consistent pattern (e.g., user always picks mixed-methods designs, user always rejects survey-only studies), update the corresponding preference field (e.g., `methodological_tendency.preferred_designs` or `methodological_tendency.avoided_designs`). Flag the update to the user: "I noticed you consistently prefer X — I've added this to your ideation preferences."
+If 3+ entries in `selection_history` show a consistent pattern (e.g., user always picks mixed-methods designs, user always rejects survey-only studies), update the corresponding preference field (e.g., `methodological_tendency.preferred_designs` or `methodological_tendency.avoided_designs`). Flag the update to the user: "I noticed you consistently prefer X. I've added this to your ideation preferences."
 
 # Branch Requirements
 

@@ -11,7 +11,7 @@ Read `project.yaml.document_type` before starting. This skill operates in two mo
 Sections marked `### For R01 Proposals` apply ONLY in R01 mode. Sections marked `### For Academic Papers` apply ONLY in paper mode. Unmarked sections apply to BOTH modes.
 
 # Mission
-Simulate a full NIH study section discussion across three domain reviewers. Synthesize their reports into a defensible overall impact score, a revision priority matrix, and a structured findings memory entry. The panel does not average scores — it deliberates.
+Simulate a full NIH study section discussion across three domain reviewers. Synthesize their reports into a defensible overall impact score, a revision priority matrix, and a structured findings memory entry. The panel does not average scores, it deliberates.
 
 # Required Inputs
 - `reviews/review_hci_r{N}.json` (must include `nih_dimensions` or `venue_dimensions`, `background_findings`, `review_confidence`)
@@ -98,7 +98,7 @@ After the discussion, assign a score (1-5, where 5 is best) to each dimension:
 - **Presentation**: Is the paper well-written, well-organized, with clear figures?
 - **Prior Work**: Does the related work section adequately position this contribution?
 
-**Contribution-type-specific weighting** — weight dimensions according to the declared `contribution_type`:
+**Contribution-type-specific weighting**: weight dimensions according to the declared `contribution_type`:
 - **Empirical**: Research Quality weighted highest (rigorous study design and analysis are paramount)
 - **Artifact**: Originality and Significance weighted highest (novel system with clear value)
 - **Methodological**: Originality and Research Quality weighted highest (new method must be validated)
@@ -141,10 +141,10 @@ Classify each recommended revision into a 2x2 matrix:
 - **Effort**: high (requires substantial new work) or low
 
 Priority order for the applicant:
-1. High-impact / low-effort — fix these first
-2. High-impact / high-effort — plan these for the revision
-3. Low-impact / low-effort — address if time allows
-4. Low-impact / high-effort — skip unless required by reviewers
+1. High-impact / low-effort, fix these first
+2. High-impact / high-effort, plan these for the revision
+3. Low-impact / low-effort, address if time allows
+4. Low-impact / high-effort, skip unless required by reviewers
 
 Each revision entry must name the target section of the proposal.
 
@@ -329,7 +329,7 @@ Write in NIH Summary Statement format with these sections:
 Write in venue peer review format with these sections:
 - **Summary of Strengths**
 - **Summary of Weaknesses**
-- **Questions for Authors** (common in CHI reviews — specific questions the authors should address in a response or revision)
+- **Questions for Authors** (common in CHI reviews, specific questions the authors should address in a response or revision)
 - **Recommendation with Justification** (overall recommendation with narrative rationale referencing dimension scores)
 - **Detailed Dimension Scores with Rationale** (each of the 5 dimensions with score and 2-3 sentence justification)
 - **Contribution Type Assessment** (does the paper deliver on its declared contribution type?)

@@ -40,9 +40,9 @@ This step prevents confidently asserting outdated claims about SOTA baselines, b
 # Dual-Bias Review Protocol
 Run two passes before writing the final review.
 
-**Pass 1 — Critical lens:** Be harsh. Look for missing baselines, unjustified architectural choices, weak evaluation splits, absent ablations, and vague reproducibility plans. If uncertain about quality, score lower. Ask: "What would a NeurIPS area chair reject this for?"
+**Pass 1. Critical lens:** Be harsh. Look for missing baselines, unjustified architectural choices, weak evaluation splits, absent ablations, and vague reproducibility plans. If uncertain about quality, score lower. Ask: "What would a NeurIPS area chair reject this for?"
 
-**Pass 2 — Supportive lens:** Be generous. Look for genuine technical novelty, well-motivated design choices, and underappreciated evaluation thoroughness. If uncertain about quality, score higher. Ask: "What would a champion reviewer argue makes this a meaningful ML contribution?"
+**Pass 2. Supportive lens:** Be generous. Look for genuine technical novelty, well-motivated design choices, and underappreciated evaluation thoroughness. If uncertain about quality, score higher. Ask: "What would a champion reviewer argue makes this a meaningful ML contribution?"
 
 The final review synthesizes both passes into a balanced, evidence-grounded assessment. Do not simply average scores; reason about which lens better reflects the actual evidence.
 
@@ -71,13 +71,13 @@ For each criterion provide:
 # Scoring Rubric (CHI/CSCW/UIST/UbiComp)
 
 **Overall recommendation** (ordinal scale):
-- **Strong Accept**: clear accept — significant contribution, excellent execution
+- **Strong Accept**: clear accept, significant contribution, excellent execution
 - **Accept**: good paper, should be accepted
 - **Weak Accept**: borderline, lean accept
 - **Borderline**: could go either way
 - **Weak Reject**: borderline, lean reject
 - **Reject**: below threshold
-- **Strong Reject**: clear reject — fundamental problems
+- **Strong Reject**: clear reject, fundamental problems
 
 **Review dimensions** (score each 1-5, where 5 is best):
 - **Significance of contribution**: Does this meaningfully advance the field?
@@ -94,7 +94,7 @@ In paper mode, apply additional AI/ML-specific review criteria:
 - **HCI audience calibration**: For HCI venues (CHI/CSCW/UIST/UbiComp), evaluate whether AI methods are explained at an appropriate level for an HCI audience. Overly dense ML notation without intuition is a weakness; oversimplification that obscures limitations is also a weakness.
 - **Reproducibility details**: Check for code availability statement, hyperparameter specification, compute requirements, and dataset access information. Flag missing reproducibility details.
 - **AI contribution novelty**: Evaluate whether the AI contribution is novel enough for the declared contribution type. A systems paper can use off-the-shelf ML; an empirical paper studying AI behavior needs rigorous evaluation; a methodological paper must show the method itself is new.
-- **Artifact evaluation**: For artifact papers, is the system evaluation meaningful? Pure accuracy numbers are insufficient — evaluate whether the evaluation captures real-world usage quality, user experience, or task-relevant performance.
+- **Artifact evaluation**: For artifact papers, is the system evaluation meaningful? Pure accuracy numbers are insufficient, evaluate whether the evaluation captures real-world usage quality, user experience, or task-relevant performance.
 - **Ablation adequacy**: For empirical papers, is the AI component properly ablated? Can the reader understand what each component contributes? Are baselines appropriate and fairly compared?
 
 ### For Academic Papers: Desk Rejection Pre-Check

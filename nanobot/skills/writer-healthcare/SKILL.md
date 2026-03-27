@@ -34,10 +34,10 @@ Integrate domain knowledge on:
 - Connect each citation to endpoint choice, workflow design, or risk plan.
 
 ### For R01 Proposals: Team Citation Requirements
-- **Prioritize `team_prior_work: true` references** from `literature/references.json` — these are PI/co-PI publications and MUST appear in your sections. NIH reviewers evaluate whether the team has the track record to execute the work. Aim for at least 2-3 team publications per aim section you write.
+- **Prioritize `team_prior_work: true` references** from `literature/references.json`. These are PI/co-PI publications and MUST appear in your sections. NIH reviewers evaluate whether the team has the track record to execute the work. Aim for at least 2-3 team publications per aim section you write.
 
 ### For Academic Papers: Citation Conventions
-- Do NOT cite own work by name (double-blind) — use "[Anonymous Year]" or omit.
+- Do NOT cite own work by name (double-blind). Use "[Anonymous Year]" or omit.
 - No minimum team citation requirement.
 - Include critique angle for each citation (what gap this paper leaves that we address).
 
@@ -118,4 +118,4 @@ Do not log routine operations. The orchestrator collects these and routes to the
 - Ethics statement present in Method section.
 - Reporting guidelines followed (CONSORT, STROBE, etc.).
 - Double-blind compliant: no author or institution identification.
-- **No forbidden sentence structures**: zero em-dash parenthetical insertions (`— xxx —`), zero trailing participial phrases (`, verb-ing xxx`), zero comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule. Scan every draft for these patterns and rewrite before delivering.
+- **No forbidden sentence structures**: **No em-dashes (—) anywhere in generated prose.** This is an absolute ban covering ALL forms: paired parentheticals (`— phrase —`), single asides (`X — Y`), appositives (`X — an approach that`), and list introductions (`X — namely, Y`). Replace with commas, periods, colons, "which"/"that" clauses, or parentheses. Scan every draft for the literal character — (U+2014) before delivering. Also banned: trailing participial phrases (`, verb-ing xxx`), comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule.

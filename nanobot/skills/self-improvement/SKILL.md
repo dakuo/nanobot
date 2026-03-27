@@ -133,7 +133,7 @@ How this could be built
 
 ## ID Format
 
-`TYPE-YYYYMMDD-NNN` — e.g., `LRN-20260302-001`, `ERR-20260302-A3F`
+`TYPE-YYYYMMDD-NNN`, e.g., `LRN-20260302-001`, `ERR-20260302-A3F`
 
 ## Promotion to Long-term Memory
 
@@ -203,9 +203,9 @@ grep -B5 "Priority\*\*: high" .learnings/*.md | grep "^## \["
 
 ## Best Practices
 
-1. **Log immediately** — context is freshest right after the issue
-2. **Be specific** — include exact commands, inputs, error output
-3. **Suggest concrete fixes** — not just "investigate"
-4. **Link related entries** — builds a knowledge graph over time
-5. **Promote aggressively** — if it's come up 3+ times, put it in MEMORY.md
-6. **Keep MEMORY.md concise** — promoted rules should be short prevention rules, not incident write-ups
+1. **Log immediately**: context is freshest right after the issue
+2. **Be specific**: include exact commands, inputs, error output
+3. **Suggest concrete fixes**: not just "investigate"
+4. **Link related entries**: builds a knowledge graph over time
+5. **Promote aggressively**: if it's come up 3+ times, put it in MEMORY.md
+6. **Keep MEMORY.md concise**: promoted rules should be short prevention rules, not incident write-ups

@@ -30,12 +30,14 @@ Unify domain drafts into one coherent academic document with a single voice, con
 5. Enforce word count targets from `project.yaml.word_count_targets.total`.
 
 # Inputs to Read
+**MANDATORY — read ALL of these BEFORE writing any prose. Failure to read voice files is the #1 cause of quality gate violations.**
+
 - `project.yaml` for page and section constraints.
 - All drafts from `docs/drafts/` produced by domain writers.
 - `ideas/ideas.json` for selected hypothesis and branch rationale.
 - `literature/references.json` and `literature/gaps.md`.
-- `_system/writing_voice.md` for personal generic voice calibration.
-- `_system/writing_voice_hci.md`, `_system/writing_voice_healthcare.md`, `_system/writing_voice_ai.md` for domain-specific voice when writing aim-specific framing sections. Apply domain voice when writing about a specific domain; use generic voice for cross-cutting sections.
+- `_system/writing_voice.md` for personal generic voice calibration. **READ the "Forbidden Sentence Structures" section — these are ABSOLUTE BANS that override all other style guidance.**
+- `_system/writing_voice_hci.md`, `_system/writing_voice_healthcare.md`, `_system/writing_voice_ai.md` for domain-specific voice when writing aim-specific framing sections. Apply domain voice when writing about a specific domain; use generic voice for cross-cutting sections. **For cross-cutting sections in multi-domain papers, read ALL relevant domain voice files, not just the generic voice.**
 
 ### For R01 Proposals
 - Prior style references from `~/Dropbox/AgentWorkspace/PriorNIHR01Examples/`.
@@ -62,7 +64,7 @@ Unify domain drafts into one coherent academic document with a single voice, con
 # 3-Pass Outline Refinement
 When invoked during the outline phase (Phase 4), use this structure-then-fill approach before dispatching any writer.
 
-**Pass 1 — Skeleton**
+**Pass 1: Skeleton**
 Generate the high-level section structure with all required headings. Each heading gets:
 - A one-line purpose statement (what this section must accomplish for the reviewer).
 - A word target (how many words this section is allocated from the budget).
@@ -77,7 +79,7 @@ No prose content yet. The skeleton is a planning artifact, not a draft.
 - Word targets from `project.yaml.sections[].word_budget`.
 - Writer assignments: map sections to domain writers based on `project.yaml.domain_tags`.
 
-**Pass 2 — Detail**
+**Pass 2: Detail**
 For each section heading from Pass 1, add:
 - 2-3 bullet points describing the specific content to be written.
 - The key claims to make and the evidence or citations to include.
@@ -87,7 +89,7 @@ This pass surfaces gaps and overlaps before any writing begins.
 ### For Academic Papers: Pass 2
 - Include research questions as organizing principle for each section.
 
-**Pass 3 — Review**
+**Pass 3: Review**
 Self-review the outline structure. Check each of the following before proceeding:
 - Are all required sections present?
 - Do word targets sum to the budget?
@@ -97,6 +99,8 @@ Self-review the outline structure. Check each of the following before proceeding
 
 ### For Academic Papers: Pass 3
 - Check all CHI-required sections are present (varies by contribution type).
+- **Related Work dependency check**: For each RW subsection, verify it does not reference concepts/techniques only explained in a later subsection. If Section A discusses systems using a technique from Section B, B must come before A. Reorder if needed.
+- **Domain grounding check**: If any RW subsection covers automated/AI approaches to a domain problem, verify it opens with a paragraph on human-conducted challenges. Do not jump straight into AI systems.
 
 Output the final outline to `docs/outline.md` only after all 3 passes complete.
 
@@ -107,11 +111,11 @@ Output the final outline to `docs/outline.md` only after all 3 passes complete.
 
 ### For Academic Papers: Framing Section Standards
 - **Introduction**: problem → gap → contribution statement → paper structure overview.
-  - **5-element arc** (from PI's 6 highly-cited HCI papers): (1) Problem grounding with concrete evidence/statistics; (2) Explicit gap identification with numbered challenges; (3) "In this work, we..." bridge introducing the system; (4) System components as numbered list — **MUST cross-check count and names against outline.md / user_input.md**; (5) Contributions as standalone bulleted/numbered list.
+  - **5-element arc** (from PI's 6 highly-cited HCI papers): (1) Problem grounding with concrete evidence/statistics; (2) Explicit gap identification with numbered challenges; (3) "In this work, we..." bridge introducing the system; (4) System components as numbered list (**MUST cross-check count and names against outline.md / user_input.md**); (5) Contributions as standalone bulleted/numbered list.
   - **System positioning**: Read `docs/user_input.md` for the user's preferred framing language (e.g., "collaborative tool", "digital twins"). Use these exact phrases when describing the system's role.
   - **Paragraph density rule**: For a 10-page paper, the Introduction should be 4–5 paragraphs and ~800–1000 words. Each paragraph must advance the argument, not just introduce a topic. Merge logically sequential arguments (e.g., "problem exists" + "current mitigations are insufficient") into a single paragraph rather than separating them. A paragraph that only sets up the next paragraph should be folded into it.
   - **Compression pattern**: When discussing limitations of existing approaches (e.g., pilot studies, empathy methods), compress to 1–2 sentences per approach citing concrete shortcomings, not a full paragraph per approach. The Introduction motivates; the Related Work section elaborates.
-  - **Positioning economy**: Statements like "our goal is not X but Y" should be embedded as subordinate clauses (e.g., "not to X, but rather to Y") rather than standalone sentences. Do NOT use em-dashes for this; use commas or restructure.
+  - **Positioning economy**: NEVER use "our goal is not X but Y" or "is not to X, but to Y" structures. These waste words on negation and produce weak, defensive framing. State the positive purpose directly. Bad: "The goal is not to replace human participants, but to stress-test the study design." Good: "The goal is to stress-test the study design before committing real participants." See `writing_voice.md` "Forbidden Sentence Structures" for the full rule.
   - **Contribution list format**: ALWAYS format contributions as a standalone bulleted or numbered list, not inline prose. Introduce with "We make the following contributions:" or "Our primary contributions are:". Each item gets 1–2 sentences on its own line. Typical count: 3–4 items.
   - **Results preview**: Include 1–2 sentences previewing key results BEFORE the contribution list: "Our results show/suggest that..."
   - **Formative study mention**: If the paper includes an empirical or formative study, mention it in the introduction with participant count and method.
@@ -119,7 +123,7 @@ Output the final outline to `docs/outline.md` only after all 3 passes complete.
 - **Related Work**: organized by thematic clusters (from literature agent), each cluster critically assessed.
   - **Preamble sentence**: Open Related Work with a 1–2 sentence overview previewing the subsection structure: "We organize related work into three areas: X (Section 2.1), Y (Section 2.2), and Z (Section 2.3)."
   - **Three thematic subsections**: Structure RW into exactly 3 subsections. Each subsection MUST end with 1–3 sentences (not a full paragraph) positioning the current work relative to the reviewed literature.
-  - **Prior publication rule (HCI venues)**: Extended abstracts (e.g., CHI EA, CHI LBW, UIST Adjunct) are NOT prior publications under ACM policy—they do not count as full papers and do NOT trigger novelty-delta or disclosure requirements. Do not cite them as "our prior work" or frame contributions relative to them. If the authors previously published an extended abstract on the same topic, treat the current submission as a standalone full paper. This applies to all ACM venues (CHI, UIST, CSCW, DIS, UbiComp/IMWUT).
+  - **Prior publication rule (HCI venues)**: Extended abstracts (e.g., CHI EA, CHI LBW, UIST Adjunct) are NOT prior publications under ACM policy. They do not count as full papers and do NOT trigger novelty-delta or disclosure requirements. Do not cite them as "our prior work" or frame contributions relative to them. If the authors previously published an extended abstract on the same topic, treat the current submission as a standalone full paper. This applies to all ACM venues (CHI, UIST, CSCW, DIS, UbiComp/IMWUT).
 - **Discussion**: synthesize findings across RQs, compare to prior work, state limitations, propose future directions.
 - **Conclusion**: 1 paragraph summary, contribution recap, broader impact.
 
@@ -191,4 +195,14 @@ Do not log routine operations. The orchestrator collects these and routes to the
 - Contribution type structure met (empirical, artifact, methodological, etc.).
 - Anonymization clean: no author names, institution names, or identifiable self-citations.
 - Word budget compliant with CHI limits.
-- **No forbidden sentence structures**: zero em-dash parenthetical insertions (`— xxx —`), zero trailing participial phrases (`, verb-ing xxx`), zero comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule. Scan every merged draft for these patterns and rewrite before delivering.
+- **No forbidden sentence structures**: **No em-dashes (—) anywhere in generated prose.** This is an absolute ban covering ALL forms: paired parentheticals (`— phrase —`), single asides (`X — Y`), appositives (`X — an approach that`), and list introductions (`X — namely, Y`). Replace with commas, periods, colons, "which"/"that" clauses, or parentheses. Scan every merged draft for the literal character — (U+2014) before delivering. Also banned: **"is not to X but to Y" / "is not X but Y"** (defensive negation framing; state the positive purpose directly instead), trailing participial phrases (`, verb-ing xxx`), comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule with examples.
+
+### Post-Generation Scan (MANDATORY — run AFTER writing, BEFORE delivering)
+Before delivering ANY prose output, scan the entire text for all forbidden patterns. This is a hard gate, not a suggestion.
+
+1. **Search for em-dashes**: Ctrl+F for `—` (U+2014). If found → rewrite those sentences using commas, periods, or "which" clauses.
+2. **Search for "is not to" / "is not X but"**: If found → rewrite to state the positive purpose directly. Remove the negation entirely.
+3. **Search for trailing participials**: Scan for patterns like `, finding that`, `, showing that`, `, enabling`, `, producing`, `, generating`, `, creating`, `, providing`, `, making`, `, suggesting`, `, indicating`, `, demonstrating`, `, resulting in`, `, leading to`, `, allowing`. If found → split into a new sentence.
+4. **Search for comma+gerund**: Scan for `, having`. If found → restructure with "After..." or split into sentences.
+
+If ANY pattern is found, fix it before delivering. Do not deliver prose that contains forbidden patterns.

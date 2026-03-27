@@ -47,7 +47,7 @@ for domain in domains:
     state["literature_parallel"][domain] = {"agent": "literature", "status": "pending", "attempt": 0}
 write_json("state.json", state)
 
-MAX_LITERATURE_RETRIES = 3  # hard cap — same broken strategy won't fix itself
+MAX_LITERATURE_RETRIES = 3  # hard cap; same broken strategy won't fix itself
 
 for domain in domains:
     spawn_subagent(
@@ -192,13 +192,13 @@ REQUIRED INPUTS (read these before writing):
 
 INSTRUCTIONS:
 1. Read the skill file first for your role and quality standards.
-2. Read outline.md and locate YOUR assigned section(s) — use the heading structure and word targets there.
+2. Read outline.md and locate YOUR assigned section(s). Use the heading structure and word targets there.
 3. Read refs.json and gaps.md to incorporate citations and address gaps.
 4. Read 1-2 prior examples from PriorNIHR01Examples/ for NIH voice calibration.
 5. Write each section to its output file. Use markdown with proper heading hierarchy.
 6. Each section MUST meet its word target (±10%).
 7. Cite references using [AuthorYear] format matching refs.json entries.
-8. Do NOT modify state.json — the orchestrator handles tracking.""",
+8. Do NOT modify state.json. The orchestrator handles tracking.""",
     )
 
 # --- Wait for all parallel batches to complete ---
@@ -226,13 +226,13 @@ spawn(
 
 PROJECT: {project_path}
 
-PHASE 1 — Write remaining sections:
+PHASE 1: Write remaining sections:
 - approach_timeline: 300 words → docs/drafts/approach_timeline_v1.md
 - approach_crosscutting: 300 words → docs/drafts/approach_crosscutting_v1.md
 - project_narrative: 1 sentence → docs/drafts/project_narrative_v1.md
 - project_summary: 30 lines → docs/drafts/project_summary_v1.md
 
-PHASE 2 — Merge all section drafts into a single document:
+PHASE 2: Merge all section drafts into a single document:
 - Read ALL files in docs/drafts/ (specific_aims, significance, innovation, {aim_file_list}, timeline, crosscutting)
 - Merge into docs/drafts/research_strategy_v1.md following NIH section order
 - Resolve terminology conflicts across domain writers
@@ -248,7 +248,7 @@ REQUIRED INPUTS:
 - Style guide: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/style_guide.md
 - Section specs: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/r01_section_specs.md
 
-Do NOT modify state.json — the orchestrator handles tracking.""",
+Do NOT modify state.json, the orchestrator handles tracking.""",
 )
 
 # On completion: mark all remaining sections + writing_integration as "complete"
@@ -288,7 +288,7 @@ else:
 - If one writer/reviewer/literature agent fails, keep successful outputs and statuses unchanged.
 - Mark failed task `failed`, increment `attempt`, append structured failure event to `events` array in `state.json`.
 - Retry only failed task(s), not the entire parallel batch.
-- **Max retries per task: 3** (configurable via `MAX_LITERATURE_RETRIES`, `MAX_WRITING_RETRIES`, `MAX_REVIEW_RETRIES`). After 3 failed attempts with the same strategy, mark the task `blocked` and request user intervention — repeating the same approach will not produce a different result.
+- **Max retries per task: 3** (configurable via `MAX_LITERATURE_RETRIES`, `MAX_WRITING_RETRIES`, `MAX_REVIEW_RETRIES`). After 3 failed attempts with the same strategy, mark the task `blocked` and request user intervention, repeating the same approach will not produce a different result.
 - If any task is `blocked`, mark the phase `blocked` and notify the user with the failure reason from `events`.
 
 ## Cost Tracking During Parallel Execution

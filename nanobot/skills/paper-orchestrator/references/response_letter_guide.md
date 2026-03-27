@@ -19,7 +19,7 @@ point-by-point responses to each reviewer.
 
 ## Responses to Reviewer 1 (R1)
 ### R1.1: [Brief label for the comment]
-> [Quoted reviewer comment — verbatim or faithfully summarized]
+> [Quoted reviewer comment, verbatim or faithfully summarized]
 
 **Response:** [What action was taken] [Where in the paper the change appears]
 
@@ -41,18 +41,18 @@ point-by-point responses to each reviewer.
 
 For each reviewer comment, follow this 3-part structure:
 
-1. **Quote** — Reproduce the reviewer's comment (use `>` blockquote). Verbatim is ideal; if summarizing, be faithful to the intent.
-2. **Action** — State clearly what was done: "We revised Section 4.2 to...", "We added a new analysis in Section 5.3...", "We respectfully disagree because...".
-3. **Location** — Point to the exact section, paragraph, or page where the change appears: "See Section 4.2, paragraph 3" or "See the new Table 3 in Section 5."
+1. **Quote**: Reproduce the reviewer's comment (use `>` blockquote). Verbatim is ideal; if summarizing, be faithful to the intent.
+2. **Action**: State clearly what was done: "We revised Section 4.2 to...", "We added a new analysis in Section 5.3...", "We respectfully disagree because...".
+3. **Location**: Point to the exact section, paragraph, or page where the change appears: "See Section 4.2, paragraph 3" or "See the new Table 3 in Section 5."
 
 ---
 
 ## Tone Guidelines
 
-- **Professional and specific** — Avoid vague responses like "We have addressed this concern." State exactly what changed.
-- **Grateful but not sycophantic** — "Thank you for this suggestion" is fine. "We are deeply grateful for your brilliant insight" is excessive.
-- **Confident but not combative** — When disagreeing, provide evidence and reasoning. Never dismiss a reviewer's concern.
-- **Concise** — Reviewers read many response letters. Respect their time with clear, direct responses.
+- **Professional and specific**: Avoid vague responses like "We have addressed this concern." State exactly what changed.
+- **Grateful but not sycophantic**: "Thank you for this suggestion" is fine. "We are deeply grateful for your brilliant insight" is excessive.
+- **Confident but not combative**: When disagreeing, provide evidence and reasoning. Never dismiss a reviewer's concern.
+- **Concise**: Reviewers read many response letters. Respect their time with clear, direct responses.
 
 ---
 
@@ -60,12 +60,12 @@ For each reviewer comment, follow this 3-part structure:
 
 It is acceptable (and sometimes necessary) to respectfully disagree with a reviewer when:
 
-- **The reviewer misunderstood the paper** — Clarify the misunderstanding, then explain what you changed to prevent future confusion: "We appreciate this concern. We believe this may stem from unclear wording in Section 3. We have revised the paragraph to clarify that..."
-- **The requested change is out of scope** — Acknowledge the suggestion's value but explain why it exceeds the paper's scope: "This is an excellent suggestion for future work. However, addressing it fully would require [X], which is beyond this paper's scope. We have added this to our Future Work discussion."
-- **The reviewer's suggestion would weaken the paper** — Explain why with evidence: "We considered this alternative approach but found that [reasoning]. We have added a brief discussion of this trade-off in Section 5."
-- **Conflicting reviewer requests** — When two reviewers want opposite changes, explain the conflict and your resolution: "R1 suggested expanding the related work while R2 suggested shortening it. We balanced both perspectives by restructuring the section to be more focused (addressing R2) while adding the specific references R1 requested."
+- **The reviewer misunderstood the paper**: Clarify the misunderstanding, then explain what you changed to prevent future confusion: "We appreciate this concern. We believe this may stem from unclear wording in Section 3. We have revised the paragraph to clarify that..."
+- **The requested change is out of scope**: Acknowledge the suggestion's value but explain why it exceeds the paper's scope: "This is an excellent suggestion for future work. However, addressing it fully would require [X], which is beyond this paper's scope. We have added this to our Future Work discussion."
+- **The reviewer's suggestion would weaken the paper**: Explain why with evidence: "We considered this alternative approach but found that [reasoning]. We have added a brief discussion of this trade-off in Section 5."
+- **Conflicting reviewer requests**: When two reviewers want opposite changes, explain the conflict and your resolution: "R1 suggested expanding the related work while R2 suggested shortening it. We balanced both perspectives by restructuring the section to be more focused (addressing R2) while adding the specific references R1 requested."
 
-Always frame pushback constructively — show you took the concern seriously even when not implementing the exact change requested.
+Always frame pushback constructively, show you took the concern seriously even when not implementing the exact change requested.
 
 ---
 
@@ -99,10 +99,10 @@ For venues that expect tracked changes (most ACM R&R processes):
 
 ## Common Mistakes in Response Letters
 
-1. **Being vague** — "We have revised the paper accordingly" without saying what changed. Always be specific.
-2. **Ignoring minor comments** — Address every point, even small ones. A simple "Fixed, thank you" suffices for typos.
-3. **Defensive tone** — Arguing with reviewers rather than engaging constructively. Even when pushing back, be collaborative.
-4. **Inconsistent numbering** — Use consistent labels (R1.1, R1.2, R2.1...) that match the original review structure.
-5. **Missing the meta-review** — If the AC wrote a meta-review with specific guidance, address it first and prominently.
-6. **Not acknowledging limitations of changes** — If a requested study would take 6 months, say so honestly rather than pretending a minor edit addresses a major concern.
-7. **Forgetting to update the paper** — Writing a great response letter but not actually making the changes in the manuscript.
+1. **Being vague**: "We have revised the paper accordingly" without saying what changed. Always be specific.
+2. **Ignoring minor comments**: Address every point, even small ones. A simple "Fixed, thank you" suffices for typos.
+3. **Defensive tone**: Arguing with reviewers rather than engaging constructively. Even when pushing back, be collaborative.
+4. **Inconsistent numbering**: Use consistent labels (R1.1, R1.2, R2.1...) that match the original review structure.
+5. **Missing the meta-review**: If the AC wrote a meta-review with specific guidance, address it first and prominently.
+6. **Not acknowledging limitations of changes**: If a requested study would take 6 months, say so honestly rather than pretending a minor edit addresses a major concern.
+7. **Forgetting to update the paper**: Writing a great response letter but not actually making the changes in the manuscript.

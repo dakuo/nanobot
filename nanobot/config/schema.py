@@ -42,7 +42,7 @@ class AgentDefaults(Base):
     max_tokens: int = 8192
     context_window_tokens: int = 65_536
     temperature: float = 0.1
-    max_tool_iterations: int = 40
+    max_tool_iterations: int = 50
     reasoning_effort: str | None = None  # low / medium / high - enables LLM thinking mode
     timezone: str = "UTC"  # IANA timezone, e.g. "Asia/Shanghai", "America/New_York"
 

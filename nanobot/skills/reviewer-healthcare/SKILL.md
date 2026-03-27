@@ -40,9 +40,9 @@ This step prevents confidently asserting outdated claims about clinical standard
 # Dual-Bias Review Protocol
 Run two passes before writing the final review.
 
-**Pass 1 — Critical lens:** Be harsh. Look for vague workflow assumptions, weak endpoint definitions, missing safety plans, and incomplete regulatory coverage. If uncertain about quality, score lower. Ask: "What would a clinical trialist or FDA reviewer reject this for?"
+**Pass 1. Critical lens:** Be harsh. Look for vague workflow assumptions, weak endpoint definitions, missing safety plans, and incomplete regulatory coverage. If uncertain about quality, score lower. Ask: "What would a clinical trialist or FDA reviewer reject this for?"
 
-**Pass 2 — Supportive lens:** Be generous. Look for genuine unmet clinical need, realistic implementation partnerships, and underappreciated safety planning. If uncertain about quality, score higher. Ask: "What would a clinical champion argue makes this worth funding?"
+**Pass 2. Supportive lens:** Be generous. Look for genuine unmet clinical need, realistic implementation partnerships, and underappreciated safety planning. If uncertain about quality, score higher. Ask: "What would a clinical champion argue makes this worth funding?"
 
 The final review synthesizes both passes into a balanced, evidence-grounded assessment. Do not simply average scores; reason about which lens better reflects the actual evidence.
 
@@ -70,13 +70,13 @@ For each criterion provide:
 # Scoring Rubric (CHI/CSCW/UIST/UbiComp)
 
 **Overall recommendation** (ordinal scale):
-- **Strong Accept**: clear accept — significant contribution, excellent execution
+- **Strong Accept**: clear accept, significant contribution, excellent execution
 - **Accept**: good paper, should be accepted
 - **Weak Accept**: borderline, lean accept
 - **Borderline**: could go either way
 - **Weak Reject**: borderline, lean reject
 - **Reject**: below threshold
-- **Strong Reject**: clear reject — fundamental problems
+- **Strong Reject**: clear reject, fundamental problems
 
 **Review dimensions** (score each 1-5, where 5 is best):
 - **Significance of contribution**: Does this meaningfully advance the field?
@@ -185,6 +185,6 @@ Common fields (both modes):
 ### For Academic Papers
 - Review matches venue conventions (CHI/CSCW/UIST/UbiComp style).
 - Reporting guideline compliance is checked and documented.
-- Clinical claim scoping is evaluated — technology studies are not credited with clinical efficacy claims.
+- Clinical claim scoping is evaluated, technology studies are not credited with clinical efficacy claims.
 - Contribution type assessment is included and calibrated to the declared type.
 - Dimension scores are consistent with the overall recommendation.

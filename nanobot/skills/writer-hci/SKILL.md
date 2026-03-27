@@ -34,10 +34,10 @@ Use and explain when appropriate:
 - Link each citation to a concrete design or evaluation decision.
 
 ### For R01 Proposals: Team Citation Requirements
-- **Prioritize `team_prior_work: true` references** from `literature/references.json` — these are PI/co-PI publications and MUST appear in your sections. NIH reviewers evaluate whether the team has the track record to execute the work. Aim for at least 2-3 team publications per aim section you write.
+- **Prioritize `team_prior_work: true` references** from `literature/references.json`. These are PI/co-PI publications and MUST appear in your sections. NIH reviewers evaluate whether the team has the track record to execute the work. Aim for at least 2-3 team publications per aim section you write.
 
 ### For Academic Papers: Citation Conventions
-- Do NOT cite own work by name (double-blind) — use "[Anonymous Year]" or omit.
+- Do NOT cite own work by name (double-blind). Use "[Anonymous Year]" or omit.
 - Prioritize CHI/CSCW/UIST/DIS proceedings.
 - Include critique angle for each citation (what gap this paper leaves that we address).
 - No minimum team citation requirement.
@@ -48,6 +48,15 @@ Use and explain when appropriate:
 3. Define participant populations, recruitment channels, and retention plan.
 4. Specify usability and adoption endpoints aligned with clinical and AI outcomes.
 5. Surface dependencies for integrator when assumptions span domains.
+
+### For Academic Papers: Extended Scope (Single-Domain HCI Papers)
+When the paper has only one domain_tag (`hci`), writer-hci is responsible for ALL content sections, not just domain-specific ones. This includes:
+- **Introduction**: problem grounding, gap, contribution statement, paper structure.
+- **Related Work**: organized by thematic clusters, critically assessed with HCI venue citations (CHI, CSCW, UIST, DIS). Each subsection ends with positioning relative to the current work. Open with a preamble sentence previewing subsection structure.
+- **Discussion**: synthesize findings across RQs, limitations, future directions.
+- **Conclusion**: summary, contribution recap, broader impact.
+
+For multi-domain papers, these cross-cutting sections are handled by writer-integrator instead. Check `paper_project.yaml.domain_tags` to determine which mode applies.
 
 # Required Inputs
 - Read `project.yaml` for page budget and section allocations.
@@ -89,13 +98,13 @@ For each section:
 - Word budget from `project.yaml.sections[].word_budget`.
 
 ### For Academic Papers: CHI Paper Writing Conventions
-- **Contribution type awareness**: read `project.yaml.contribution_type` — structure sections accordingly.
+- **Contribution type awareness**: read `project.yaml.contribution_type` and structure sections accordingly.
 - **For empirical papers**: user study must report N, recruitment method, demographics, IRB/ethics statement.
 - **For artifact papers**: describe design rationale, implementation, preliminary evaluation.
-- **"Implications for Design" section**: MUST connect directly to specific findings, not speculative. Reference Dourish's 2006 CHI critique — implications should be actionable design guidance.
+- **"Implications for Design" section**: MUST connect directly to specific findings, not speculative. Reference Dourish's 2006 CHI critique; implications should be actionable design guidance.
 - **Research questions**: explicitly number and state (RQ1, RQ2, etc.).
 - **Signposting**: use "In this section, we..." transitions.
-- **Hedging**: use "suggests", "may indicate", "our findings show" — not overclaiming.
+- **Hedging**: use "suggests", "may indicate", "our findings show" (not overclaiming).
 - **Figure references**: self-contained captions, refer to figures by "Figure 1" not "F1".
 
 ### For Academic Papers: System Description Cross-Check (MANDATORY)
@@ -103,7 +112,7 @@ Before finalizing any section that describes the system's components/modules:
 1. **Read the system design section** (or `docs/outline.md` / `docs/user_input.md`) to get the authoritative component list.
 2. **Verify component count** matches exactly. Do not omit "obvious" components like configuration interfaces or input modules.
 3. **Verify component names** match the terminology used in the system section.
-4. **Use the user's positioning language** for the system (e.g., "collaborative tool", "digital twins") — check `docs/user_input.md` for preferred framing.
+4. **Use the user's positioning language** for the system (e.g., "collaborative tool", "digital twins"). Check `docs/user_input.md` for preferred framing.
 
 # Budget Discipline
 - Respect page limits defined in `project.yaml` and section specs.
@@ -141,4 +150,4 @@ Do not log routine operations. The orchestrator collects these and routes to the
 - Contribution type conventions met (empirical, artifact, methodological, etc.).
 - Implications connect directly to findings, not speculative claims.
 - Double-blind compliant: no author or institution identification.
-- **No forbidden sentence structures**: zero em-dash parenthetical insertions (`— xxx —`), zero trailing participial phrases (`, verb-ing xxx`), zero comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule. Scan every draft for these patterns and rewrite before delivering.
+- **No forbidden sentence structures**: **No em-dashes (—) anywhere in generated prose.** This is an absolute ban covering ALL forms: paired parentheticals (`— phrase —`), single asides (`X — Y`), appositives (`X — an approach that`), and list introductions (`X — namely, Y`). Replace with commas, periods, colons, "which"/"that" clauses, or parentheses. Scan every draft for the literal character — (U+2014) before delivering. Also banned: **"is not to X but to Y" / "is not X but Y"** (defensive negation framing; state the positive purpose directly instead), trailing participial phrases (`, verb-ing xxx`), comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule with examples.

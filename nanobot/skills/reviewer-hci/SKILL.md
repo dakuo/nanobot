@@ -41,9 +41,9 @@ This step prevents confidently asserting outdated claims about HCI methodology o
 # Dual-Bias Review Protocol
 Run two passes before writing the final review.
 
-**Pass 1 — Critical lens:** Be harsh. Look for weaknesses, missing details, unfounded usability claims, and recruitment gaps. If uncertain about quality, score lower. Ask: "What would a skeptical CHI reviewer reject this for?"
+**Pass 1. Critical lens:** Be harsh. Look for weaknesses, missing details, unfounded usability claims, and recruitment gaps. If uncertain about quality, score lower. Ask: "What would a skeptical CHI reviewer reject this for?"
 
-**Pass 2 — Supportive lens:** Be generous. Look for genuine novelty in interaction design, promising deployment contexts, and underappreciated methodological strengths. If uncertain about quality, score higher. Ask: "What would a champion reviewer argue makes this fundable?"
+**Pass 2. Supportive lens:** Be generous. Look for genuine novelty in interaction design, promising deployment contexts, and underappreciated methodological strengths. If uncertain about quality, score higher. Ask: "What would a champion reviewer argue makes this fundable?"
 
 The final review synthesizes both passes into a balanced, evidence-grounded assessment. Do not simply average scores; reason about which lens better reflects the actual evidence.
 
@@ -72,13 +72,13 @@ For each criterion provide:
 # Scoring Rubric (CHI/CSCW/UIST/UbiComp)
 
 **Overall recommendation** (ordinal scale):
-- **Strong Accept**: clear accept — significant contribution, excellent execution
+- **Strong Accept**: clear accept, significant contribution, excellent execution
 - **Accept**: good paper, should be accepted
 - **Weak Accept**: borderline, lean accept
 - **Borderline**: could go either way
 - **Weak Reject**: borderline, lean reject
 - **Reject**: below threshold
-- **Strong Reject**: clear reject — fundamental problems
+- **Strong Reject**: clear reject, fundamental problems
 
 **Review dimensions** (score each 1-5, where 5 is best):
 - **Significance of contribution**: Does this meaningfully advance the field?

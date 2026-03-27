@@ -5,7 +5,7 @@ description: "Verify research hypothesis novelty via Semantic Scholar and web se
 
 # Mission
 
-Verify that proposed research hypotheses are genuinely novel by searching existing literature. Produce a structured novelty report with evidence-based verdicts. The bar is "novel enough for an NIH R01 review panel" — not "technically different from everything ever written." Be a harsh critic. Reviewers will find the overlap if you don't.
+Verify that proposed research hypotheses are genuinely novel by searching existing literature. Produce a structured novelty report with evidence-based verdicts. The bar is "novel enough for an NIH R01 review panel", not "technically different from everything ever written." Be a harsh critic. Reviewers will find the overlap if you don't.
 
 # Working Context
 
@@ -13,8 +13,8 @@ Verify that proposed research hypotheses are genuinely novel by searching existi
 - Write results back to each branch's `related_work_found` field
 - Write the full novelty report to `ideas/novelty_report.json`
 - Can be invoked per-branch (pass a branch ID) or for all branches in the file
-- Domain focus: human-centered AI for healthcare — know this space well enough to recognize near-duplicates even when titles differ
-- Read `_system/ideation_preferences.json` for PI's risk appetite and scope preferences. Use `risk_appetite` to calibrate novelty thresholds — a PI with high risk appetite tolerates `novel_with_differentiation` more readily. Use `scope_preference` to flag branches that don't match preferred aim count or independence level.
+- Domain focus: human-centered AI for healthcare, know this space well enough to recognize near-duplicates even when titles differ
+- Read `_system/ideation_preferences.json` for PI's risk appetite and scope preferences. Use `risk_appetite` to calibrate novelty thresholds, a PI with high risk appetite tolerates `novel_with_differentiation` more readily. Use `scope_preference` to flag branches that don't match preferred aim count or independence level.
 
 # Search Protocol
 
@@ -39,12 +39,12 @@ Do not rephrase the hypothesis title five different ways. That is not varied sea
 - Use `web_search` to search for preprints, technical reports, and workshop papers not yet indexed in Semantic Scholar
 - Target arXiv, bioRxiv, medRxiv, and major venue proceedings (NeurIPS, ICLR, AAAI, AMIA, CHIL, ACL)
 - Use `web_fetch` to retrieve abstracts or summaries when a result looks highly relevant
-- This step is MANDATORY — do not skip it or rely on background knowledge alone. The novelty verdict confidence should be "high" only when live search has been performed.
+- This step is MANDATORY, do not skip it or rely on background knowledge alone. The novelty verdict confidence should be "high" only when live search has been performed.
 
 **Step 4: Iterative refinement**
 - Up to 5 search rounds per branch
 - After each round, assess whether the verdict is becoming clear
-- If you find a near-duplicate in round 2, do not stop — confirm it and check for differentiation angles
+- If you find a near-duplicate in round 2, do not stop, confirm it and check for differentiation angles
 - Exit early only when: (a) verdict is `novel` with high confidence after 3+ rounds, or (b) verdict is `not_novel` and confirmed by 2+ independent sources
 
 # Novelty Assessment Criteria
@@ -61,8 +61,8 @@ Classify overlap on a four-point scale:
 |---|---|
 | `no_overlap` | Paper is in the same general area but addresses a different problem, method, or population |
 | `partial_overlap` | Paper shares one of the three dimensions (problem, method, or population) |
-| `significant_overlap` | Paper shares two or more dimensions — differentiation is required |
-| `duplicate` | Paper addresses the same problem with the same method on the same population — this hypothesis is not novel |
+| `significant_overlap` | Paper shares two or more dimensions, differentiation is required |
+| `duplicate` | Paper addresses the same problem with the same method on the same population, this hypothesis is not novel |
 
 When in doubt, classify higher (more overlap). It is better to flag a false positive than to miss a true duplicate.
 
@@ -114,7 +114,7 @@ For each branch, produce the following fields and write them back to `ideas/idea
   ],
   "differentiation_statement": "Specific statement of how this branch differs from overlapping work. Null if no overlap found.",
   "confidence": "high | medium | low",
-  "confidence_rationale": "Brief explanation — e.g., 'Semantic Scholar returned sparse results for this niche; web search also limited. Low confidence.'",
+  "confidence_rationale": "Brief explanation, e.g., 'Semantic Scholar returned sparse results for this niche; web search also limited. Low confidence.'",
   "recommendation": "keep | revise | prune",
   "revision_guidance": "If verdict is needs_revision: specific suggestions for how to rework the hypothesis. Null otherwise."
 }

@@ -65,7 +65,7 @@ To enter this phase directly (skipping prior phases):
 - Required files: `paper_project.yaml`, `state.json` (initialized)
 - state.json: `current_phase` set to `literature`, `phase_status.init` marked `complete` or `skipped`
 - Auto-setup: Run init workspace scaffolding (create subdirectories, `findings_memory.json`, populate `writing_parallel`)
-- Validation: Rarely entered mid-pipeline. If literature is itself skipped, set `phase_status.literature: skipped` — downstream writers will proceed without `references.json`
+- Validation: Rarely entered mid-pipeline. If literature is itself skipped, set `phase_status.literature: skipped`, downstream writers will proceed without `references.json`
 
 **Agent(s)**
 - `literature` × N in parallel (one per domain tag in `paper_project.yaml.domain_tags`).
@@ -77,14 +77,14 @@ To enter this phase directly (skipping prior phases):
    - Each reads `literature` skill and is assigned one domain.
    - Task prompt: "You are the {domain} literature agent. Read the literature skill at {skill_path} and follow its instructions. Your domain assignment is: {domain}. DOCUMENT_TYPE: paper. Project path: ~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/. Find 8-15 references for the {domain} domain. Use citation graph traversal and iterative query refinement. Write to literature/references_{domain}.json and literature/gaps_{domain}.md."
    - Spawn call: `spawn(task=..., label="lit-{domain}", max_iterations=30, model=..., workspace="~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/")`
-4. **State tracking (MANDATORY — do this for EVERY spawn and retry):**
+4. **State tracking (MANDATORY, do this for EVERY spawn and retry):**
    - **Before each spawn**: Read `state.json`, set `literature_parallel.{domain}.status = "running"`, increment `attempt`, write back. Append event.
    - **On agent success**: Set status to `"complete"`, append event.
    - **On agent failure**: Set status to `"failed"`, append event with failure reason.
    - **Max retries**: If `attempt >= 3` and still `"failed"`, mark phase `"blocked"` and request user intervention.
 5. When all domain searches complete:
    - Merge `literature/references_{domain}.json` files into `literature/references.json`.
-   - Deduplicate by DOI/URL — keep highest-priority annotation (`must-cite` > `supporting` > `optional`).
+   - Deduplicate by DOI/URL, keep highest-priority annotation (`must-cite` > `supporting` > `optional`).
    - Build `thematic_clusters` in merged references: group references by theme/topic for the related work section. Each cluster has a `theme_label`, `description`, and list of `reference_ids`.
    - Merge gap files into `literature/gaps.md`, consolidating cross-domain findings.
    - Validate: every `must-cite` reference has a non-empty `supports_claim`.
@@ -268,7 +268,7 @@ To enter this phase directly (skipping prior phases):
 To enter this phase directly (skipping prior phases):
 - Required files: `docs/drafts/paper_draft_v1.md` (or `paper_draft_v0.md` from import), `paper_project.yaml`, `state.json`
 - state.json: `current_phase` set to `review`, phases 1–5 marked `complete` or `skipped`, `writing_parallel` populated from draft section headers
-- Auto-setup: **This is the MOST COMMON mid-pipeline entry** — user provides existing draft for review. Parse draft section headers to populate `state.json.writing_parallel`. If figures phase is skipped, set `phase_status.figures: skipped`
+- Auto-setup: **This is the MOST COMMON mid-pipeline entry**: user provides existing draft for review. Parse draft section headers to populate `state.json.writing_parallel`. If figures phase is skipped, set `phase_status.figures: skipped`
 - Validation: Draft file must exist; `writing_parallel` must have entries for all sections in `paper_project.yaml.sections`
 
 **Agent(s)**
@@ -327,7 +327,7 @@ To enter this phase directly (skipping prior phases):
 **Agent(s)**
 - `reviser`.
 
-**Actions — Simulated Mode** (`paper_project.yaml.revision.mode = "simulated"` or unset):
+**Actions. Simulated Mode** (`paper_project.yaml.revision.mode = "simulated"` or unset):
 1. Reviser reads `reviews/findings_memory.json` for cumulative findings across all prior rounds.
 2. Generates a self-directed revision plan from panel priorities and domain critiques.
 3. Patches draft sections according to the plan.
@@ -336,7 +336,7 @@ To enter this phase directly (skipping prior phases):
 6. Updates `docs/drafts/paper_draft_v{N+1}.md` with revised content.
 7. Increments `review_round` and routes back to Phase 6 (review).
 
-**Actions — Actual R&R Mode** (`paper_project.yaml.revision.mode = "actual"`):
+**Actions. Actual R&R Mode** (`paper_project.yaml.revision.mode = "actual"`):
 1. Orchestrator reads `paper_project.yaml.revision.reviewer_comments_path` to locate the real reviewer comments file.
 2. Spawn `reviser` with `mode="actual"` and the reviewer comments path:
    - Task prompt: "You are the reviser in ACTUAL R&R mode. Read the reviser skill. Reviewer comments are at: {reviewer_comments_path}. Generate a point-by-point response letter and revised draft."
@@ -355,24 +355,24 @@ To enter this phase directly (skipping prior phases):
 6. If user requests changes: iterate (re-spawn reviser with user feedback).
 7. Multiple R&R rounds are supported (increment N each round). CSCW allows 2+ rounds; CHI typically has 1.
 
-**Output artifacts — Simulated:**
+**Output artifacts. Simulated:**
 - `docs/drafts/paper_draft_v{N+1}.md`
 - `reviews/revision_log_r{N}.md`
 - `reviews/revision_diffs_r{N}.json`
 - `reviews/findings_memory.json` (updated)
 
-**Output artifacts — Actual R&R:**
+**Output artifacts. Actual R&R:**
 - `reviews/response_letter_r{N}.md`
 - `docs/drafts/paper_draft_v{N+1}.md`
 - `reviews/change_summary_r{N}.md`
 - `reviews/revision_diffs_r{N}.json`
 
-**Exit criteria — Simulated:**
+**Exit criteria. Simulated:**
 - Revised draft exists and all high-priority issues are addressed.
 - `revision_diffs_r{N}.json` records all changes.
 - `phase_status.revision = complete`.
 
-**Exit criteria — Actual R&R:**
+**Exit criteria. Actual R&R:**
 - Response letter exists with per-reviewer point-by-point responses.
 - Revised draft exists with all changes marked.
 - User has approved the response letter and revision.
@@ -380,7 +380,7 @@ To enter this phase directly (skipping prior phases):
 
 **Error handling**
 - Log failure, preserve previous draft, retry reviser only.
-- In actual mode, never discard user-approved response letter content — only append/modify.
+- In actual mode, never discard user-approved response letter content, only append/modify.
 
 ---
 
@@ -401,7 +401,7 @@ To enter this phase directly (skipping prior phases):
 - Orchestrator (assembly + anonymization check)
 - `evolution` (post-export learning)
 
-**Actions — Export:**
+**Actions. Export:**
 1. Run anonymization checklist (read `references/anonymization_checklist.md`):
    - Scan full paper text for author names, institutional affiliations, grant numbers.
    - Verify self-citations use third-person or [Anonymous Year].
@@ -410,15 +410,15 @@ To enter this phase directly (skipping prior phases):
    - Verify figures contain no identifying logos, watermarks, or institutional branding.
    - If any check fails: report violations to user, do NOT proceed until fixed.
 2. Assemble final submission package:
-   - `export/paper_submission_v{N}/paper.md` — anonymized full paper.
-   - `export/paper_submission_v{N}/figures/` — all figure files (SVG + PNG).
-   - `export/paper_submission_v{N}/supplementary/` — supplementary materials (if applicable).
-   - `export/paper_submission_v{N}/response_letter.md` — response letter (if actual R&R mode).
-   - `export/export_manifest.md` — file listing, word count, figure count, venue, contribution type.
+   - `export/paper_submission_v{N}/paper.md`, anonymized full paper.
+   - `export/paper_submission_v{N}/figures/`, all figure files (SVG + PNG).
+   - `export/paper_submission_v{N}/supplementary/`, supplementary materials (if applicable).
+   - `export/paper_submission_v{N}/response_letter.md`, response letter (if actual R&R mode).
+   - `export/export_manifest.md`, file listing, word count, figure count, venue, contribution type.
 3. Validate word count against venue limits (see `references/venue_review_criteria.md`).
 4. Post final checkpoint to user for sign-off.
 
-**Actions — Evolution (after user approval):**
+**Actions. Evolution (after user approval):**
 5. Spawn `evolution` agent with the completed project path.
 6. Evolution agent reads all review JSONs, revision diffs, findings memory, and user feedback files.
 7. Updates `_system/reviewer_patterns.json` with new or incremented patterns.
@@ -442,4 +442,4 @@ To enter this phase directly (skipping prior phases):
 **Error handling**
 - If anonymization check finds violations: list all violations, block export, return to user for fixes.
 - If export assembly fails: record error, keep intermediate artifacts, retry assembly.
-- Evolution failure is non-fatal — the export is already done. Log and continue.
+- Evolution failure is non-fatal, the export is already done. Log and continue.

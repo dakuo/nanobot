@@ -45,7 +45,7 @@ Before expanding any section during revision, enforce page constraints from `pro
 3. Classify each issue by severity: critical, high, medium, low.
 4. Map each issue to exact file and section targets.
 5. Identify cross-domain dependencies before generating the plan.
-6. **Extended abstract filter**: If reviewers flag overlap with a prior extended abstract (CHI EA, CHI LBW, UIST Adjunct), discard that critique — extended abstracts are NOT prior publications under ACM policy and require no novelty-delta disclosure or "this paper extends..." framing. Do not add such framing during revision.
+6. **Extended abstract filter**: If reviewers flag overlap with a prior extended abstract (CHI EA, CHI LBW, UIST Adjunct), discard that critique. Extended abstracts are NOT prior publications under ACM policy and require no novelty-delta disclosure or "this paper extends..." framing. Do not add such framing during revision.
 
 # Self-Generated Revision Plan
 Do not simply execute the panel's priority list. Generate your own plan:
@@ -130,7 +130,7 @@ In paper mode, use word counts from `project.yaml.word_count_targets` instead of
 - Method/System: ~2000-3000 words
 - Results: ~1500-2000 words
 - Discussion: ~1000-1500 words
-Read actual targets from `project.yaml.word_count_targets` — the above are defaults only.
+Read actual targets from `project.yaml.word_count_targets` (the above are defaults only).
 
 After all edits, recount words per section and add a reconciliation table to the revision log:
 
@@ -189,7 +189,7 @@ At the start of each revision round, read `ideas/findings_memory.json` before ge
 When `document_type` is `paper`, this skill supports two revision modes (read from `project.yaml.revision.mode`):
 
 #### Mode: `simulated`
-Internal simulated review → revision. Follows the same flow as R01 revision — simulated reviewers generate feedback, this agent revises. No response letter needed.
+Internal simulated review → revision. Follows the same flow as R01 revision: simulated reviewers generate feedback, this agent revises. No response letter needed.
 
 #### Mode: `actual`
 User pastes real reviewer comments → system generates a formal response letter + revised draft.
@@ -213,7 +213,7 @@ User pastes real reviewer comments → system generates a formal response letter
 Generate `reviews/response_letter_r{N}.md` with this structure:
 
 ```markdown
-# Response to Reviewers — Revision Round {N}
+# Response to Reviewers, Revision Round {N}
 
 We thank the reviewers for their constructive feedback. Below we address each comment point-by-point.
 
@@ -247,7 +247,7 @@ We thank the reviewers for their constructive feedback. Below we address each co
 ```
 
 **Response letter conventions:**
-- Quote every reviewer comment verbatim — do not paraphrase or summarize
+- Quote every reviewer comment verbatim; do not paraphrase or summarize
 - State the specific action taken, or provide a reasoned explanation for declining
 - Point to the exact location in the paper (section/paragraph/page)
 - Tone: professional, specific, grateful but not sycophantic
@@ -264,7 +264,7 @@ After generating revisions, write `reviews/latexdiff_guide_r{N}.md` documenting:
 - CHI Revise & Resubmit: typically 4-5 weeks, one round only (accept/reject decision after)
 - CSCW: allows multiple R&R rounds (initial → major revision → minor revision → accept)
 - UIST: typically one conditional acceptance round
-- Plan revision scope accordingly — CHI R&R must be comprehensive in one round; CSCW can be iterative
+- Plan revision scope accordingly: CHI R&R must be comprehensive in one round; CSCW can be iterative
 
 # Output Contract
 Every revision round produces:
@@ -276,8 +276,8 @@ Every revision round produces:
 - `_system/revision_playbook.md` updated if new anti-patterns or preferred fixes were identified.
 
 ### For Academic Papers: Additional Outputs (when `revision.mode` is `actual`)
-- `reviews/response_letter_r{N}.md` — point-by-point response to reviewers.
-- `reviews/latexdiff_guide_r{N}.md` — instructions for generating latexdiff PDF and summary of changes by file.
+- `reviews/response_letter_r{N}.md`: point-by-point response to reviewers.
+- `reviews/latexdiff_guide_r{N}.md`: instructions for generating latexdiff PDF and summary of changes by file.
 
 # Quality Bar
 - Every high-severity issue has a concrete edit response.

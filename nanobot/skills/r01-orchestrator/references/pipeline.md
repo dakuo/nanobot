@@ -51,14 +51,14 @@ Collect project meta-information that downstream phases depend on: investigator 
 
 **Actions**
 1. Read `project.yaml` and check for missing metadata fields.
-2. **Investigator collection** — check `project.yaml.investigators`:
+2. **Investigator collection**: check `project.yaml.investigators`:
    - If PI name is null: prompt user interactively: "Who is the PI on this project? (Name, institution, Google Scholar ID or ORCID if available)"
-   - If co-investigators are empty: prompt: "Any co-investigators? (Name, role, expertise — or skip)"
+   - If co-investigators are empty: prompt: "Any co-investigators? (Name, role, expertise, or skip)"
    - If `scholar_id` is provided for any investigator: queue publication fetch for literature phase.
-3. **Clinical trial classification** — check `project.yaml.nih_context.clinical_trial_classification`:
+3. **Clinical trial classification**: check `project.yaml.nih_context.clinical_trial_classification`:
    - If null: prompt user: "Does this project involve a clinical trial? (not_allowed / optional / required)"
    - This determines which Parent R01 NOFO applies (PA-25-301/302/303).
-4. **NIH context collection** — check `project.yaml.nih_context.target_institute` and `foa.number`:
+4. **NIH context collection**: check `project.yaml.nih_context.target_institute` and `foa.number`:
    - If target_institute is null OR foa.number is null:
      a. Spawn `r01-foa-finder` with project topic, aims, clinical_trial_classification.
      b. Agent searches Grants.gov for active FOAs, NIH Reporter for funded project intelligence, Highlighted Topics for alignment.
@@ -66,7 +66,7 @@ Collect project meta-information that downstream phases depend on: investigator 
      d. Present recommendations to user: "Based on your topic, I recommend [IC] with [FOA]. Agree?"
      e. User confirms or overrides.
    - If user provides target_institute and foa.number directly: skip r01-foa-finder.
-5. **Submission timeline** — check `project.yaml.submission.cycle`:
+5. **Submission timeline**: check `project.yaml.submission.cycle`:
    - If null: calculate next R01 receipt date from current date (Feb 5 / Jun 5 / Oct 5).
    - Compute project_start (cycle + 9 months) and project_end (start + budget_period - 1 day).
    - Present to user for confirmation.
@@ -111,7 +111,7 @@ The orchestrator determines which ideation mode to use:
 - **Express mode**: If the user provides a fully-formed concept with 2+ specific aims, a clear clinical problem, and identifiable HCI/AI/healthcare components (e.g., aims are already defined in `project.yaml` with descriptions). The ideation agent adopts the user's concept as branch-1 and develops it through the reflection loop without generating 5 orthogonal alternatives.
 - **Full mode**: If the user provides only a topic area or problem statement without specific aims. The ideation agent generates 5 orthogonal directions through the full DIVERGE/DEVELOP/FILTER/CONVERGE/CHECKPOINT pipeline.
 
-The orchestrator communicates the mode to the ideation agent in the spawn prompt: "Use express mode — the user has provided a complete concept with N aims" or "Use full mode — generate 5 orthogonal directions from the topic."
+The orchestrator communicates the mode to the ideation agent in the spawn prompt: "Use express mode: the user has provided a complete concept with N aims" or "Use full mode: generate 5 orthogonal directions from the topic."
 
 **Actions**
 1. Spawn ideation agent with project constraints and scope.
@@ -151,17 +151,17 @@ The orchestrator communicates the mode to the ideation agent in the spawn prompt
 1. Populate `state.json.literature_parallel` with entries for hci, healthcare, ai.
 2. Spawn 3 literature subagents simultaneously, each assigned one domain.
 3. Each agent runs a multi-round search workflow:
-   - Step 0: Investigator Publication Search (mandatory — find PI and co-PI papers first).
-   - Step 0.5: Seed Reference Ingestion — read `project.yaml.seed_references`, resolve each via DOI/PMID/URL, annotate as `user_provided: true` and `must-cite`. If the array is empty, skip.
+   - Step 0: Investigator Publication Search (mandatory; find PI and co-PI papers first).
+   - Step 0.5: Seed Reference Ingestion. Read `project.yaml.seed_references`, resolve each via DOI/PMID/URL, annotate as `user_provided: true` and `must-cite`. If the array is empty, skip.
    - Steps 1-4: Build query packs, execute searches, fetch paper details, filter and prioritize.
-   - Step 4.5: Citation graph traversal (snowball sampling via Semantic Scholar API — forward citations and backward references from top 5 must-cite papers **plus all user-provided seed references**, capped at 10 additional papers).
-   - Step 4.7: Iterative query refinement — assess per-aim coverage, generate refined queries from discovered terminology, run up to 3 total search rounds, exit early when all aims have 5+ papers.
-   - Step 5: Annotate each reference with structured fields including `supports_claim` (claim-evidence mapping — one-sentence proposal claim the reference supports).
+   - Step 4.5: Citation graph traversal (snowball sampling via Semantic Scholar API, including forward citations and backward references from top 5 must-cite papers **plus all user-provided seed references**, capped at 10 additional papers).
+   - Step 4.7: Iterative query refinement. Assess per-aim coverage, generate refined queries from discovered terminology, run up to 3 total search rounds, exit early when all aims have 5+ papers.
+   - Step 5: Annotate each reference with structured fields including `supports_claim` (claim-evidence mapping: one-sentence proposal claim the reference supports).
    - Step 6: Gap analysis with contradiction detection (flag conflicting findings across papers) and evidence synthesis tables (per-aim: paper, population, method, outcome, finding, limitation, our advantage).
 4. Each writes `literature/references_{domain}.json` (with `_metadata` header tracking rounds and snowball stats) and `literature/gaps_{domain}.md`.
 5. Track per-domain status in `state.json.literature_parallel`.
 6. When all 3 complete, merge:
-   - Combine `literature/references_{hci,healthcare,ai}.json` into `literature/references.json`. Deduplicate by DOI/URL — when duplicates exist, keep the annotation with higher priority (`must-cite` > `supporting` > `optional`). Merge `_metadata` into a combined summary.
+   - Combine `literature/references_{hci,healthcare,ai}.json` into `literature/references.json`. Deduplicate by DOI/URL; when duplicates exist, keep the annotation with higher priority (`must-cite` > `supporting` > `optional`). Merge `_metadata` into a combined summary.
    - Combine `literature/gaps_{hci,healthcare,ai}.md` into `literature/gaps.md`. Preserve all domain-specific sections. Consolidate cross-domain contradictions and evidence synthesis tables.
    - Validate `supports_claim` coverage: every `must-cite` reference in the merged file must have a non-empty `supports_claim`.
 
@@ -430,5 +430,5 @@ Before spawning the three domain reviewers, the orchestrator MAY spawn `writer-i
 - `phase_status.evolution = complete`.
 
 **Error handling**
-- Log failure but do not block pipeline completion — the export is already done. Evolution failure is non-fatal.
+- Log failure but do not block pipeline completion. The export is already done; evolution failure is non-fatal.
 - Retry evolution independently without affecting exported artifacts.

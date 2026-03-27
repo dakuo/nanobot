@@ -13,7 +13,7 @@ Identify the optimal NIH funding opportunity, target institute, and program offi
 - Read any existing `docs/foa_analysis.md` before overwriting (preserve prior manual edits or notes).
 - Read `references/api_patterns.md` for exact API call templates, field mappings, and the ALN→IC table.
 - Write output to `docs/foa_analysis.md`.
-- Propose updates to `project.yaml` `nih_context` section (do NOT apply directly — the orchestrator presents recommendations to the user for confirmation).
+- Propose updates to `project.yaml` `nih_context` section (do NOT apply directly; the orchestrator presents recommendations to the user for confirmation).
 
 # Workflow
 
@@ -29,29 +29,29 @@ Construct **3 keyword phrases** from the topic and aims for Grants.gov search. U
 - Specific method+domain terms (e.g., `"natural language processing clinical notes"`)
 - Application-area terms (e.g., `"patient decision support AI"`)
 
-Good keywords match how NIH names its FOAs — focus on informatics/health/biomedical terms rather than narrow technical jargon.
+Good keywords match how NIH names its FOAs. Focus on informatics/health/biomedical terms rather than narrow technical jargon.
 
-## Step 2: Layer 1 — Grants.gov Keyword Search
+## Step 2: Layer 1, Grants.gov Keyword Search
 
-Run 2-3 keyword searches using the **Keyword Search** template from `references/api_patterns.md`. The template includes a python post-processing pipe that filters to NIH-only results and outputs a compact format — this is required because raw JSON responses exceed the `exec` tool's 10,000-character output limit.
+Run 2-3 keyword searches using the **Keyword Search** template from `references/api_patterns.md`. The template includes a python post-processing pipe that filters to NIH-only results and outputs a compact format. This is required because raw JSON responses exceed the `exec` tool's 10,000-character output limit.
 
 For each search, use `exec` to run the curl command with the keyword filled in. The output is pipe-delimited: `FOA_NUMBER|TITLE|CLOSE_DATE|ALN_LIST|GRANTS_GOV_ID|STATUS`
 
 From each result line, extract:
 - `number` (FOA number)
 - `title`
-- `cfdaList` (ALN list — reveals which ICs sponsor this FOA)
+- `cfdaList` (ALN list, which reveals which ICs sponsor this FOA)
 - `closeDate`
 - `oppStatus`
-- `id` (grants.gov ID — for enrichment URL later)
+- `id` (grants.gov ID, used for enrichment URL later)
 
 **Post-filter**: The template's python pipe already filters to NIH-only results.
 
-**Collect**: Store all unique FOA numbers as `KEYWORD_HITS`. Also tally which ALN numbers appear most frequently across results — this reveals the likely target IC(s).
+**Collect**: Store all unique FOA numbers as `KEYWORD_HITS`. Also tally which ALN numbers appear most frequently across results, which reveals the likely target IC(s).
 
-**Validation**: If all keyword searches return `hitCount: 0`, do NOT conclude "no FOAs exist." Log a warning and proceed to Layer 2. Zero results usually means the keywords are too narrow — Layer 2 (CFDA search) will catch what keywords missed.
+**Validation**: If all keyword searches return `hitCount: 0`, do NOT conclude "no FOAs exist." Log a warning and proceed to Layer 2. Zero results usually means the keywords are too narrow. Layer 2 (CFDA search) will catch what keywords missed.
 
-## Step 3: Layer 2 — Grants.gov CFDA/ALN Search
+## Step 3: Layer 2, Grants.gov CFDA/ALN Search
 
 Determine the target IC(s) from one of these sources (in priority order):
 1. `project.yaml` → `nih_context.target_institute` (if already set)
@@ -60,23 +60,23 @@ Determine the target IC(s) from one of these sources (in priority order):
 
 Look up the ALN number for the target IC in the ALN→IC table in `references/api_patterns.md`. Run the **CFDA/ALN Search** template (which includes the required python post-processing pipe to stay within the exec output limit).
 
-This returns ALL active FOAs from that institute — regardless of keyword match. Post-filter to R01-eligible FOAs: keep entries where the title contains "R01", "Research Project", "Research Grant", or a known R01-eligible activity code.
+This returns ALL active FOAs from that institute, regardless of keyword match. Post-filter to R01-eligible FOAs: keep entries where the title contains "R01", "Research Project", "Research Grant", or a known R01-eligible activity code.
 
 Store results as `ALN_HITS`. This layer catches FOAs with titles that don't match your keyword searches.
 
 If the target IC is ambiguous, run ALN searches for up to 2 candidate ICs.
 
-## Step 4: Layer 3 — NIH Reporter Cross-Reference
+## Step 4: Layer 3, NIH Reporter Cross-Reference
 
 Search NIH Reporter for recently funded R01 projects on similar topics. Use the **Search Funded Projects** template from `references/api_patterns.md`.
 
-**Search 1** (broad discovery): Use topic keywords WITHOUT the `agencies` filter. This reveals which ICs are actually funding this type of work — don't assume the target IC upfront.
+**Search 1** (broad discovery): Use topic keywords WITHOUT the `agencies` filter. This reveals which ICs are actually funding this type of work, so don't assume the target IC upfront.
 
 From results, extract:
-- `opportunity_number` — the FOA these projects were funded under (highest-signal data)
-- `agency_ic_admin.abbreviation` — tally IC frequency across results
-- `program_officers` — names for the Program Officer section
-- `project_num` and `project_title` — evidence for IC recommendations
+- `opportunity_number`: the FOA these projects were funded under (highest-signal data)
+- `agency_ic_admin.abbreviation`: tally IC frequency across results
+- `program_officers`: names for the Program Officer section
+- `project_num` and `project_title`: evidence for IC recommendations
 
 **Search 2** (optional, if Layer 1 or 2 suggested a specific IC): Run a targeted search with `"agencies": ["{IC}"]` to find more funded projects and program officers from that IC.
 
@@ -86,7 +86,7 @@ Store unique FOA numbers as `REPORTER_HITS`. Store program officer names separat
 
 **Reissue detection**: FOA numbers from Reporter may be old (e.g., `PAR-23-245`). These are handled in the Validate step.
 
-## Step 5: Layer 4 — Web Search Fallback
+## Step 5: Layer 4, Web Search Fallback
 
 Run 1-2 web searches using the `web_search` tool:
 
@@ -137,13 +137,13 @@ Select top 3-5 candidates for enrichment.
 
 For each top candidate, retrieve the full FOA text to extract budget and eligibility details.
 
-**CRITICAL RULE**: Never discard a FOA just because enrichment fails. If you cannot retrieve the full text, include the FOA in your output using the data from the search2 response (number, title, close date, ALN). Add a note: "Full text not available — verify details at grants.gov." Partial information is always better than a missing FOA.
+**CRITICAL RULE**: Never discard a FOA just because enrichment fails. If you cannot retrieve the full text, include the FOA in your output using the data from the search2 response (number, title, close date, ALN). Add a note: "Full text not available; verify details at grants.gov." Partial information is always better than a missing FOA.
 
 **Enrichment strategy** (try in order, per `references/api_patterns.md`):
-1. `web_fetch` the NIH Guide page (URL pattern from reference file) — works for most pre-2026 FOAs
-2. If 404, use `web_search` for `"{FOA_NUMBER} full announcement NIH"` — typically returns a `files.simpler.grants.gov` link with the full announcement as static HTML. Fetch that link with `web_fetch`.
+1. `web_fetch` the NIH Guide page (URL pattern from reference file). Works for most pre-2026 FOAs.
+2. If 404, use `web_search` for `"{FOA_NUMBER} full announcement NIH"`. This typically returns a `files.simpler.grants.gov` link with the full announcement as static HTML. Fetch that link with `web_fetch`.
 3. If both fail, `web_fetch` the grants.gov detail page: `https://www.grants.gov/search-results-detail/{id}` (note: JavaScript-rendered, may return limited content)
-4. If ALL enrichment fails, use the search2 data you already have — do NOT drop the FOA
+4. If ALL enrichment fails, use the search2 data you already have. Do NOT drop the FOA.
 
 From the full text, extract:
 - **Budget ceiling**: annual direct cost limit and total project period budget
@@ -179,24 +179,24 @@ If a targeted FOA has its own deadline, note both the FOA-specific and standard 
 
 Write `docs/foa_analysis.md` using the Output Contract below.
 
-Prepare proposed `project.yaml` updates (included in the output document — NOT written directly).
+Prepare proposed `project.yaml` updates (included in the output document, NOT written directly).
 
-# IC Reference Tiers — AI + Healthcare Research
+# IC Reference Tiers: AI + Healthcare Research
 
 Tier 1 (primary candidates):
-- **NIBIB** — AI/ML methods, sensors, devices, imaging
-- **NLM** — NLP, clinical informatics, health data science, personal health informatics
-- **NIMH** — behavioral interventions, digital mental health
-- **NCI** — cancer informatics, screening, decision support
-- **NHLBI** — cardiovascular AI, remote monitoring
-- **NIA** — aging-in-place technology, cognitive decline detection
+- **NIBIB**: AI/ML methods, sensors, devices, imaging
+- **NLM**: NLP, clinical informatics, health data science, personal health informatics
+- **NIMH**: behavioral interventions, digital mental health
+- **NCI**: cancer informatics, screening, decision support
+- **NHLBI**: cardiovascular AI, remote monitoring
+- **NIA**: aging-in-place technology, cognitive decline detection
 
 Tier 2 (secondary candidates):
-- **NIDDK** — diabetes, kidney, digestive AI applications
-- **NINDS** — neurological disorder AI/imaging
-- **NHGRI** — genomics/precision medicine AI
-- **NIMHD** — health disparities, equity in AI
-- **NCATS** — translational science, clinical trial innovation
+- **NIDDK**: diabetes, kidney, digestive AI applications
+- **NINDS**: neurological disorder AI/imaging
+- **NHGRI**: genomics/precision medicine AI
+- **NIMHD**: health disparities, equity in AI
+- **NCATS**: translational science, clinical trial innovation
 
 # Output Contract
 
@@ -223,7 +223,7 @@ Generated: {date}
 
 ## Recommended Institutes (Top 3)
 
-### 1. {IC Code} — {IC Name} (Recommended)
+### 1. {IC Code}: {IC Name} (Recommended)
 - **Active FOAs found**: {count} on Grants.gov
 - **Funded R01s found**: {count} in NIH Reporter (FY2024-2026)
 - **Example funded projects**:
@@ -232,10 +232,10 @@ Generated: {date}
 - **Mission alignment**: {1-2 sentences}
 - **Key ALN**: {number}
 
-### 2. {IC Code} — {IC Name}
+### 2. {IC Code}: {IC Name}
 {same structure}
 
-### 3. {IC Code} — {IC Name}
+### 3. {IC Code}: {IC Name}
 {same structure}
 
 ## Recommended Funding Opportunity
@@ -246,7 +246,7 @@ Generated: {date}
 - **Clinical trial status**: {not_allowed/optional/required}
 - **Budget ceiling**: {annual direct cost ceiling}
 - **Total project period budget**: {if specified, or "Standard R01 limits apply"}
-- **Close date**: {date or "Open — standard receipt dates apply"}
+- **Close date**: {date or "Open, standard receipt dates apply"}
 - **Found via**: {which search layers found this FOA}
 - **Rationale**: {2-3 sentences on why this is the best fit}
 
@@ -261,7 +261,7 @@ Generated: {date}
 | ... | ... | ... | ... | ... | ... |
 
 ## Relevant NOSIs (if found)
-- {NOT number}: {title} — targets {parent FOA}, expires {date}
+- {NOT number}: {title} (targets {parent FOA}, expires {date})
 
 ## Program Officers
 
@@ -301,31 +301,31 @@ submission:
 ```
 
 # Quality Bar
-- Every API call uses `exec` with an exact curl template from `references/api_patterns.md` — never construct JSON payloads from scratch.
+- Every API call uses `exec` with an exact curl template from `references/api_patterns.md`. Never construct JSON payloads from scratch.
 - Every IC recommendation is backed by evidence: funded project examples from NIH Reporter and/or active FOAs from Grants.gov.
-- **Budget ceiling is stated for every FOA recommendation** — for Parent R01s, state $500K/year direct cost limit; for targeted FOAs, extract from the full text.
+- **Budget ceiling is stated for every FOA recommendation.** For Parent R01s, state $500K/year direct cost limit; for targeted FOAs, extract from the full text.
 - Clinical trial classification correctly maps to PA-25-301/302/303.
 - Program Officers are sourced from NIH Reporter data on the recommended IC (last 2 FY).
 - Submission timeline uses standard R01 receipt dates (Feb 5, Jun 5, Oct 5).
-- If a targeted FOA exists, its scope is verified against the project aims — not just keyword overlap.
-- The Search Summary section shows results from all 4 layers — making it transparent which searches worked and which returned zero.
+- If a targeted FOA exists, its scope is verified against the project aims, not just keyword overlap.
+- The Search Summary section shows results from all 4 layers, making it transparent which searches worked and which returned zero.
 - If `hitCount` is 0 for a Grants.gov keyword search, the agent tried a broader keyword before giving up.
 
 # Anti-Patterns
-- Do NOT use `"agencies": "HHS-NIH"` in Grants.gov queries — this returns zero results. Post-filter by `agencyCode` instead.
-- Do NOT use `"fundingCategories"` in Grants.gov queries — this filter breaks NIH results.
-- Do NOT use the `fetchOpportunity` endpoint — it is broken in production.
-- Do NOT recommend an IC based solely on name recognition — use funded project evidence.
-- Do NOT hallucinate FOA numbers or Program Officer names — every recommendation must come from API results.
-- Do NOT apply updates to `project.yaml` directly — route through the orchestrator.
-- Do NOT ignore clinical trial classification — it determines the Parent R01 variant.
+- Do NOT use `"agencies": "HHS-NIH"` in Grants.gov queries, this returns zero results. Post-filter by `agencyCode` instead.
+- Do NOT use `"fundingCategories"` in Grants.gov queries, this filter breaks NIH results.
+- Do NOT use the `fetchOpportunity` endpoint, it is broken in production.
+- Do NOT recommend an IC based solely on name recognition, use funded project evidence.
+- Do NOT hallucinate FOA numbers or Program Officer names, every recommendation must come from API results.
+- Do NOT apply updates to `project.yaml` directly, route through the orchestrator.
+- Do NOT ignore clinical trial classification, it determines the Parent R01 variant.
 - Do NOT recommend a FOA without verifying its `oppStatus` is `"posted"` via oppNum lookup.
-- Do NOT skip the NIH Reporter search — Grants.gov alone does not reveal actual funding patterns.
-- Do NOT present more than 5 alternative FOAs — curate the most relevant options.
-- Do NOT discard a FOA because enrichment failed (404, timeout, etc.) — always include it with partial data from the search2 response.
-- Do NOT run Grants.gov curl commands without the python post-processing pipe — raw JSON exceeds the exec tool's 10K character output limit and results WILL be silently truncated.
-- Do NOT construct curl JSON payloads from scratch — use the templates in `references/api_patterns.md`.
-- Do NOT interpret `hitCount: 0` as "no FOAs exist" — try broader keywords and proceed to the next search layer.
+- Do NOT skip the NIH Reporter search. Grants.gov alone does not reveal actual funding patterns.
+- Do NOT present more than 5 alternative FOAs, curate the most relevant options.
+- Do NOT discard a FOA because enrichment failed (404, timeout, etc.): always include it with partial data from the search2 response.
+- Do NOT run Grants.gov curl commands without the python post-processing pipe, raw JSON exceeds the exec tool's 10K character output limit and results WILL be silently truncated.
+- Do NOT construct curl JSON payloads from scratch, use the templates in `references/api_patterns.md`.
+- Do NOT interpret `hitCount: 0` as "no FOAs exist", try broader keywords and proceed to the next search layer.
 
 # Agent Learnings Output
 After completing the FOA analysis, append any reusable insights to `.learnings/LEARNINGS.md`:

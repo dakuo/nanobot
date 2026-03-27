@@ -14,7 +14,7 @@ Sections marked `### For R01 Proposals` apply ONLY in R01 mode. Sections marked 
 Build a rigorous, annotated evidence base for one domain of an academic document (R01 proposal or research paper) by actively searching the web for real papers, fetching abstracts, annotating relevance, and identifying research gaps.
 
 # Domain Focus
-You are spawned with a domain assignment in your task description: `hci`, `healthcare`, or `ai`. Focus your search, annotation, and gap analysis on that domain. You will also find cross-domain papers that bridge your domain with the others — tag those `cross-domain`.
+You are spawned with a domain assignment in your task description: `hci`, `healthcare`, or `ai`. Focus your search, annotation, and gap analysis on that domain. You will also find cross-domain papers that bridge your domain with the others, tag those `cross-domain`.
 
 # Working Context
 - Project workspace: `~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/`
@@ -23,15 +23,15 @@ You are spawned with a domain assignment in your task description: `hci`, `healt
 - Read prior examples in `~/Dropbox/AgentWorkspace/PriorNIHR01Examples/` for citation style.
 - Write your output to `literature/references_{domain}.json` and `literature/gaps_{domain}.md`.
 
-### For R01 Proposals: Investigator Publication Search (MANDATORY Step 0 — Run BEFORE Domain Queries)
+### For R01 Proposals: Investigator Publication Search (MANDATORY Step 0. Run BEFORE Domain Queries)
 
-NIH reviewers evaluate whether the investigative team has the track record to execute the proposed work. Citing the team's own prior publications is **essential** for establishing credibility. This step is NOT optional — it runs before any domain-specific literature search.
+NIH reviewers evaluate whether the investigative team has the track record to execute the proposed work. Citing the team's own prior publications is **essential** for establishing credibility. This step is NOT optional, it runs before any domain-specific literature search.
 
-# Seed References (Step 0.5 — Run AFTER Investigator Search for R01, or as Starting Point for Papers)
+# Seed References (Step 0.5. Run AFTER Investigator Search for R01, or as Starting Point for Papers)
 
-In R01 mode, the PI may provide specific papers as seed references in `project.yaml.seed_references`. These are papers the PI considers important for the proposal — prior work, key competitor papers, foundational references, or papers the PI has seen at conferences. **Every seed reference must be included in the output.**
+In R01 mode, the PI may provide specific papers as seed references in `project.yaml.seed_references`. These are papers the PI considers important for the proposal, prior work, key competitor papers, foundational references, or papers the PI has seen at conferences. **Every seed reference must be included in the output.**
 
-In paper mode, seed references are author-provided key papers in `project.yaml.seed_references`. These are papers the authors consider essential context — foundational work, direct competitors, or papers that motivate the research questions. **Every seed reference must be included in the output.**
+In paper mode, seed references are author-provided key papers in `project.yaml.seed_references`. These are papers the authors consider essential context, foundational work, direct competitors, or papers that motivate the research questions. **Every seed reference must be included in the output.**
 
 ## Ingestion Procedure
 
@@ -41,10 +41,10 @@ In paper mode, seed references are author-provided key papers in `project.yaml.s
    - If `pmid` is provided: `exec(command="curl -s 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id={pmid}&retmode=xml&rettype=abstract'")`
    - If `url` is provided: `web_fetch(url="{url}", extractMode="text")` and extract title/authors/year from the page content
 3. Annotate each resolved paper with the full reference schema (see Step 5):
-   - Set `"user_provided": true` — marks this as a PI-provided seed
-   - Set `"priority": "must-cite"` — PI explicitly wants this cited
+   - Set `"user_provided": true`, marks this as a PI-provided seed
+   - Set `"priority": "must-cite"`. PI explicitly wants this cited
    - Set `"proposal_relevance"` from the `note` field in project.yaml (if provided), otherwise write a relevance statement based on abstract analysis
-   - Determine `"domain"` by matching content to your assigned domain. If the paper fits your domain, claim it. If it fits another domain, still include it with `"domain": "cross-domain"` — the merge step handles deduplication.
+   - Determine `"domain"` by matching content to your assigned domain. If the paper fits your domain, claim it. If it fits another domain, still include it with `"domain": "cross-domain"`, the merge step handles deduplication.
    - Set `"team_prior_work": true` if any author matches an investigator in `project.yaml.investigators`
 4. **Failure handling**: If a seed reference cannot be resolved (DOI not found, URL unreachable), log the failure in `gaps_{domain}.md` under a "Seed Reference Resolution Failures" section. Do NOT silently drop it.
 5. **Forward citation seeding**: All resolved seed references are automatically added to the snowball seed set in Step 4.5 (see below). This ensures the PI's key papers are expanded via citation graph traversal.
@@ -60,7 +60,7 @@ PIs provide seed references because they know the landscape. A seed paper may:
 - **Minimum 5 papers per PI** on topics related to the proposal (methods, population, domain, or technology).
 - **Minimum 3 papers per co-PI** on their area of expertise.
 - ALL investigator papers are tagged `"team_prior_work": true` and default to `"priority": "must-cite"`.
-- Search broadly — include the investigator's most-cited works even if not directly on the proposal topic. High-citation foundational papers demonstrate research impact.
+- Search broadly, include the investigator's most-cited works even if not directly on the proposal topic. High-citation foundational papers demonstrate research impact.
 - Expand beyond the last 5 years for foundational or highly-cited works (100+ citations).
 
 ## Search Procedure (for EACH investigator in `project.yaml.investigators`)
@@ -108,7 +108,7 @@ If initial searches return few results, broaden to `site:dl.acm.org` (for IMWUT/
 
 Replace the example names above with the actual investigators from `project.yaml`.
 
-If `scholar_id` (Google Scholar ID or ORCID) is provided, use it for more precise lookup — this is the **preferred path** and should be attempted FIRST before name-based searches:
+If `scholar_id` (Google Scholar ID or ORCID) is provided, use it for more precise lookup, this is the **preferred path** and should be attempted FIRST before name-based searches:
 ```
 web_fetch(url="https://scholar.google.com/citations?hl=en&user={scholar_id}&view_op=list_works&sortby=pubdate", extractMode="text")
 ```
@@ -123,9 +123,9 @@ web_fetch(url="https://api.semanticscholar.org/graph/v1/author/search?query={inv
 From all search results for each investigator:
 1. Pick the **most relevant** papers to this proposal (method overlap, population overlap, technology overlap).
 2. Pick the **most cited** papers to demonstrate research impact (even if tangentially related).
-3. Pick papers that show **domain breadth** — e.g., a PI with both HCI and AI papers shows interdisciplinary strength.
+3. Pick papers that show **domain breadth**: e.g., a PI with both HCI and AI papers shows interdisciplinary strength.
 4. For each selected paper, annotate with the full reference schema (see Step 5) plus `"team_prior_work": true`.
-5. Write a specific `supports_claim` — e.g., "PI Wang's prior work on conversational AI for clinical settings (CHI 2023) demonstrates expertise in the core interaction paradigm proposed in Aim 1."
+5. Write a specific `supports_claim`, e.g., "PI Wang's prior work on conversational AI for clinical settings (CHI 2023) demonstrates expertise in the core interaction paradigm proposed in Aim 1."
 
 ### 0d. Minimum count enforcement
 After searching, count papers found per investigator:
@@ -142,12 +142,12 @@ When `document_type` is `paper`, skip the Investigator Publication Search entire
 
 #### Positioning Strategy
 1. **Identify contribution type** from `project.yaml.contribution_type` (empirical, artifact, methodological, theoretical, survey, opinion, benchmark).
-2. **Build thematic clusters** — groups of papers organized by theme that will form the structure of the Related Work section.
+2. **Build thematic clusters**: groups of papers organized by theme that will form the structure of the Related Work section.
 3. **Prioritize venue-specific sources:**
    - ACM Digital Library (dl.acm.org) for CHI, CSCW, UIST, UbiComp/IMWUT, DIS proceedings
    - Semantic Scholar for cross-venue coverage and citation graphs
    - arXiv for recent preprints in HCI/AI intersection
-4. **Search by venue** — query specific conference proceedings to ensure coverage of the target community:
+4. **Search by venue**: query specific conference proceedings to ensure coverage of the target community:
    ```
    web_search(query="\"CHI 2024\" OR \"CHI 2023\" {topic_keywords}", count=15)
    web_search(query="\"CSCW 2024\" OR \"CSCW 2023\" {topic_keywords}", count=15)
@@ -164,7 +164,7 @@ For each identified theme, create a cluster entry in the output:
     {
       "theme_name": "Conversational Agents for Health",
       "papers": ["ref_hci_001", "ref_hci_003", "ref_hci_007"],
-      "narrative_thread": "Prior work has explored chatbots for health coaching but not for longitudinal cognitive monitoring — our paper bridges this gap by...",
+      "narrative_thread": "Prior work has explored chatbots for health coaching but not for longitudinal cognitive monitoring, our paper bridges this gap by...",
       "related_work_subsection": "2.1"
     }
   ]
@@ -178,9 +178,9 @@ Each cluster needs:
 - `related_work_subsection`: suggested numbering for the Related Work section
 
 #### Critique Angle Extraction
-For every reference found in paper mode, determine what limitation or gap this paper has that the current work addresses. This becomes the `critique_angle` field in the reference annotation (see Step 5). The critique angle is essential for writing the Related Work section — each cited paper should set up why the current paper's contribution is needed.
+For every reference found in paper mode, determine what limitation or gap this paper has that the current work addresses. This becomes the `critique_angle` field in the reference annotation (see Step 5). The critique angle is essential for writing the Related Work section, each cited paper should set up why the current paper's contribution is needed.
 
-# Search Strategy — Tool-Level Instructions
+# Search Strategy. Tool-Level Instructions
 
 ## Date Awareness
 Use the current year in all date-range queries. Do NOT hardcode year ranges. When searching:
@@ -190,18 +190,18 @@ Use the current year in all date-range queries. Do NOT hardcode year ranges. Whe
 ## Step 1: Build Query Packs
 From the project topic and selected idea, construct 8-12 search queries. Structure queries in three tiers:
 
-**Tier 1 — Core domain queries** (4-5 queries):
+**Tier 1. Core domain queries** (4-5 queries):
 - Combine domain-specific terms with the target population and intervention
 - Example for HCI: `"conversational agent" AND "older adults" AND "cognitive assessment"`
 - Example for Healthcare: `"mild cognitive impairment" AND "home monitoring" AND "speech biomarkers"`
 - Example for AI: `"speech language model" AND "longitudinal" AND "cognitive decline" detection`
 
-**Tier 2 — Method and evaluation queries** (2-3 queries):
+**Tier 2. Method and evaluation queries** (2-3 queries):
 - Target specific methodologies relevant to your domain
 - Example: `"participatory design" AND "dementia" AND "technology"`
 - Example: `"transformer" AND "speech features" AND "MCI" classification`
 
-**Tier 3 — Bridge queries** (2-3 queries):
+**Tier 3. Bridge queries** (2-3 queries):
 - Cross-domain queries linking your domain to the other two
 - Example: `"usability" AND "clinical decision support" AND "machine learning" AND "elderly"`
 
@@ -361,7 +361,7 @@ The `supports_claim` field creates a traceable evidence chain from reference to 
 - **Every `must-cite` reference MUST have a `supports_claim`**. `supporting` and `optional` references SHOULD have one when possible.
 - The claim should be **specific enough to appear verbatim or near-verbatim** in the proposal. Bad: "Supports Aim 1." Good: "Speech pause patterns measured during naturalistic conversation predict MCI progression at 12 months (Aim 2 primary endpoint)."
 - The claim must name the **specific construct, population, method, or outcome** the reference supports.
-- Multiple references can support the same claim — this strengthens the evidence chain.
+- Multiple references can support the same claim, this strengthens the evidence chain.
 - Writers can search for "all refs supporting claim X" instead of inferring relevance from free-text fields.
 
 ## Step 6: Gap Analysis
@@ -375,7 +375,7 @@ After annotating all references, write a structured gap analysis:
 3. Connect each gap to a specific aim and explain how our proposal addresses it.
 
 ### For Academic Papers: Gap Analysis as Research Positioning
-When `document_type` is `paper`, reframe the gap analysis as **research positioning** — the narrative of why this paper matters:
+When `document_type` is `paper`, reframe the gap analysis as **research positioning**: the narrative of why this paper matters:
 - Frame each gap as **motivation for the paper's contribution**, not just "what's missing in the literature."
 - Connect gaps directly to the paper's research questions (from `project.yaml.research_questions`).
 - For each gap, articulate: "Because prior work has not addressed X, our paper contributes Y."
@@ -402,7 +402,7 @@ Addressing conflicts proactively demonstrates literature command and prevents re
 
 Write two files:
 
-**`literature/references_{domain}.json`** — Array of annotated reference objects (schema above). Include a top-level `_metadata` object:
+**`literature/references_{domain}.json`**: Array of annotated reference objects (schema above). Include a top-level `_metadata` object:
 ```json
 {
   "_metadata": {
@@ -418,7 +418,7 @@ Write two files:
 }
 ```
 
-**`literature/gaps_{domain}.md`** — Structured markdown:
+**`literature/gaps_{domain}.md`**: Structured markdown:
 ```
 # {Domain} Literature Gap Analysis
 ```
@@ -426,7 +426,7 @@ Write two files:
 ### For Academic Papers: Output Format Additions
 When `document_type` is `paper`, the output files include additional fields:
 
-**`literature/references_{domain}.json`** — Same schema as above, with these additions:
+**`literature/references_{domain}.json`**: Same schema as above, with these additions:
 - Each reference includes a `critique_angle` field (see Step 5)
 - Top-level `thematic_clusters` array (see Literature Positioning step):
 ```json
@@ -444,7 +444,7 @@ When `document_type` is `paper`, the output files include additional fields:
 }
 ```
 
-**`literature/gaps_{domain}.md`** — Reframed as "Research Positioning":
+**`literature/gaps_{domain}.md`**: Reframed as "Research Positioning":
 ```
 # {Domain} Research Positioning
 
@@ -467,9 +467,9 @@ When `document_type` is `paper`, the output files include additional fields:
 The standard gap analysis format below applies in R01 mode:
 
 ## Evidence Summary
-- Aim 1 ({aim title}): [strong/mixed/sparse] — [brief explanation]
-- Aim 2 ({aim title}): [strong/mixed/sparse] — [brief explanation]
-- Aim 3 ({aim title}): [strong/mixed/sparse] — [brief explanation]
+- Aim 1 ({aim title}): [strong/mixed/sparse], [brief explanation]
+- Aim 2 ({aim title}): [strong/mixed/sparse], [brief explanation]
+- Aim 3 ({aim title}): [strong/mixed/sparse], [brief explanation]
 
 ## Top Gaps
 1. [Gap description] → addresses [Aim N] via [our approach]
@@ -487,8 +487,8 @@ The standard gap analysis format below applies in R01 mode:
 ## Conflicting Evidence
 For each conflict pair:
 ### Conflict: [Topic of disagreement]
-- **Paper A**: ref_{domain}_XXX — [finding]
-- **Paper B**: ref_{domain}_YYY — [contradictory finding]
+- **Paper A**: ref_{domain}_XXX, [finding]
+- **Paper B**: ref_{domain}_YYY, [contradictory finding]
 - **Disagreement**: [What specifically differs]
 - **Possible explanations**: [population, method, sample size differences]
 - **Our approach**: [How our proposal resolves or accounts for this]
@@ -549,14 +549,14 @@ One table per aim. Each table maps the evidence landscape for that aim.
 # Anti-Patterns
 - Do NOT invent or hallucinate paper titles, authors, or DOIs.
 - Do NOT write generic gap statements disconnected from specific aims.
-- Do NOT stop after one round of searches — iterate if you find fewer than 10 quality papers.
-- Do NOT stop the entire phase because `web_search` fails — fall back to PubMed E-utilities and Semantic Scholar API (see Failure Recovery).
-- Do NOT duplicate effort — check what prior domain agents have already found by reading any existing `literature/references_*.json` files.
-- Do NOT write vague `supports_claim` values like "Supports Aim 1" — be specific about the construct, population, and outcome.
-- Do NOT skip contradiction detection — even if no conflicts are found, state "No conflicting evidence identified" in the output.
-- Do NOT leave evidence synthesis table cells empty — write "Not reported" if the paper does not provide that information.
-- Do NOT hardcode year ranges — use the current date to compute recency windows.
-- Do NOT include author self-citations when `document_type` is `paper` — this is a double-blind violation. Papers must be cited on merit, not authorship.
-- Do NOT skip the Investigator Publication Search (Step 0) when in R01 mode. This is mandatory even when `scholar_id` is missing — fall back to name + institution + expertise keyword searches. An R01 proposal without PI self-citations will be scored poorly on the Investigator criterion.
+- Do NOT stop after one round of searches, iterate if you find fewer than 10 quality papers.
+- Do NOT stop the entire phase because `web_search` fails, fall back to PubMed E-utilities and Semantic Scholar API (see Failure Recovery).
+- Do NOT duplicate effort, check what prior domain agents have already found by reading any existing `literature/references_*.json` files.
+- Do NOT write vague `supports_claim` values like "Supports Aim 1", be specific about the construct, population, and outcome.
+- Do NOT skip contradiction detection, even if no conflicts are found, state "No conflicting evidence identified" in the output.
+- Do NOT leave evidence synthesis table cells empty, write "Not reported" if the paper does not provide that information.
+- Do NOT hardcode year ranges, use the current date to compute recency windows.
+- Do NOT include author self-citations when `document_type` is `paper`, this is a double-blind violation. Papers must be cited on merit, not authorship.
+- Do NOT skip the Investigator Publication Search (Step 0) when in R01 mode. This is mandatory even when `scholar_id` is missing, fall back to name + institution + expertise keyword searches. An R01 proposal without PI self-citations will be scored poorly on the Investigator criterion.
 ### For R01 Proposals Only: Team Prior Work Enforcement
-- Do NOT mark the literature phase as complete if fewer than **3** `team_prior_work: true` papers per PI/co-PI are in the output. The orchestrator enforces a hard validation gate on this — the phase will FAIL and be re-run. Go back and search harder using `scholar_id` (Google Scholar page), Semantic Scholar API, ACM DL, and PubMed.
+- Do NOT mark the literature phase as complete if fewer than **3** `team_prior_work: true` papers per PI/co-PI are in the output. The orchestrator enforces a hard validation gate on this, the phase will FAIL and be re-run. Go back and search harder using `scholar_id` (Google Scholar page), Semantic Scholar API, ACM DL, and PubMed.

@@ -33,7 +33,7 @@ Generate only figures that strengthen decision-critical content:
 3. Validate spec completeness before rendering.
 4. **Figma check**: If `project.yaml.figma_config.enabled == true`, attempt to match each spec to a Figma frame before rendering (see Figma Integration). Matched frames are exported directly; unmatched specs proceed to matplotlib rendering.
 5. Render unmatched figures to `figures/exports/` via matplotlib.
-6. Run VLM quality review on each rendered figure — both Figma-sourced and AI-generated (see VLM Quality Review Loop).
+6. Run VLM quality review on each rendered figure, both Figma-sourced and AI-generated (see VLM Quality Review Loop).
 7. Run figure set coherence review after all figures pass (see Figure Set Coherence Review).
 8. Write caption and insertion guidance.
 9. If Figma is enabled, sync captions and metadata back to Figma (see Figma Integration).
@@ -50,7 +50,7 @@ Generate only figures that strengthen decision-critical content:
 - `output_formats` (`svg`, `png`)
 - `target_sections`
 - `caption_notes`
-- `source` (`figma` | `ai_generated`) — origin of the figure render
+- `source` (`figma` | `ai_generated`): origin of the figure render
 
 # Rendering Guidance
 - MVP renderer: matplotlib for chart and schematic generation.
@@ -61,7 +61,7 @@ Generate only figures that strengthen decision-critical content:
 ### For Academic Papers: ACM Accessibility and Template Requirements
 When `document_type` is `paper`:
 - **Alt text required**: All figures MUST have descriptive alt text per ACM accessibility policy. Write alt text in `figures/captions.md` alongside each caption.
-- **Color independence**: Follow SIGCHI accessibility guidelines — figures must be distinguishable without color (use patterns, shapes, or labels in addition to color).
+- **Color independence**: Follow SIGCHI accessibility guidelines, figures must be distinguishable without color (use patterns, shapes, or labels in addition to color).
 - **Figure placement**: For acmart LaTeX template, use `\begin{figure}[t]` for top-of-column placement. Use `\begin{figure*}[t]` for full-width figures spanning both columns.
 - **Resolution**: Export at minimum 300 DPI for print proceedings. SVG preferred for line art and diagrams.
 
@@ -151,7 +151,7 @@ When the pipeline is running in revision round 2 or later, avoid regenerating fi
 When `document_type` is `paper`:
 - **Self-contained captions**: Each caption must explain both what the figure shows AND why it matters, without requiring the reader to consult body text. A reviewer skimming figures should understand the paper's story.
 - **Sample sizes**: Include N= for any data-driven figures (e.g., "Distribution of task completion times (N=24)").
-- **Figure numbering**: Follow ACM conventions — use "Figure 1", "Figure 2" (not "F1", "F2" or "Fig. 1"). In LaTeX, use `\autoref{fig:name}` for consistent referencing.
+- **Figure numbering**: Follow ACM conventions, use "Figure 1", "Figure 2" (not "F1", "F2" or "Fig. 1"). In LaTeX, use `\autoref{fig:name}` for consistent referencing.
 - **Subfigure labeling**: Use (a), (b), (c) for multi-panel figures with a shared caption that describes each panel.
 
 # Integration Guidance
@@ -160,7 +160,7 @@ When `document_type` is `paper`:
 - Ensure references in text match exported filenames.
 
 # Figma Integration
-Bidirectional sync with Figma via Figma MCP and REST API. Figma figures and AI-generated figures coexist in the same pipeline — the VLM quality review and figure set coherence review treat them identically. The only difference is the source of the initial render.
+Bidirectional sync with Figma via Figma MCP and REST API. Figma figures and AI-generated figures coexist in the same pipeline, the VLM quality review and figure set coherence review treat them identically. The only difference is the source of the initial render.
 
 ## Configuration (`project.yaml`)
 ```yaml
@@ -222,13 +222,13 @@ For actual image export (PNG/SVG/PDF), use the Figma REST API via `web_fetch`:
 - If a specific frame export fails: log the error in `figma_sync.json` and fall back to matplotlib for that figure.
 
 # Output Contract
-- `figures/specs/F{N}.yaml` — figure spec for each figure
-- `figures/exports/F{N}.svg` — vector export
-- `figures/exports/F{N}.png` — raster export
-- `figures/captions.md` — all captions with aim linkage
-- `figures/vlm_feedback.json` — per-figure VLM review results, retry history, and inheritance status
-- `figures/set_review.md` — figure set coherence recommendations from collection-level review
-- `figures/figma_sync.json` — Figma import/export sync log (only when Figma integration is enabled)
+- `figures/specs/F{N}.yaml`, figure spec for each figure
+- `figures/exports/F{N}.svg`, vector export
+- `figures/exports/F{N}.png`, raster export
+- `figures/captions.md`, all captions with aim linkage
+- `figures/vlm_feedback.json`, per-figure VLM review results, retry history, and inheritance status
+- `figures/set_review.md`, figure set coherence recommendations from collection-level review
+- `figures/figma_sync.json`. Figma import/export sync log (only when Figma integration is enabled)
 
 # Quality Bar
 - Every figure maps to a proposal claim, not decoration.

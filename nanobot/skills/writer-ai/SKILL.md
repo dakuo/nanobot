@@ -39,10 +39,10 @@ Include concrete detail for:
 - Contrast proposal novelty against named baselines.
 
 ### For R01 Proposals: Team Citation Requirements
-- **Prioritize `team_prior_work: true` references** from `literature/references.json` — these are PI/co-PI publications and MUST appear in your sections. NIH reviewers evaluate whether the team has the track record to execute the work. Aim for at least 2-3 team publications per aim section you write.
+- **Prioritize `team_prior_work: true` references** from `literature/references.json`. These are PI/co-PI publications and MUST appear in your sections. NIH reviewers evaluate whether the team has the track record to execute the work. Aim for at least 2-3 team publications per aim section you write.
 
 ### For Academic Papers: Citation Conventions
-- Do NOT cite own work by name (double-blind) — use "[Anonymous Year]" or omit.
+- Do NOT cite own work by name (double-blind). Use "[Anonymous Year]" or omit.
 - Cite NeurIPS, ICML, AAAI, ICLR AND relevant HCI venues (CHI, CSCW) for applied work.
 - Include critique angle for each citation (what gap this paper leaves that we address).
 - No minimum team citation requirement.
@@ -82,8 +82,8 @@ For each technical subsection:
 ### For Academic Papers: AI/ML Paper Conventions
 - **Reproducibility**: include training details (hyperparameters, compute resources, random seeds) sufficient for replication.
 - **Code/data availability statement**: state whether code and data will be released, and under what terms.
-- **Ablation study**: expected for artifact/empirical papers with ML components — isolate contribution of each proposed component.
-- **Ethics of AI section**: required if model impacts human decision-making — discuss fairness, accountability, transparency.
+- **Ablation study**: expected for artifact/empirical papers with ML components. Isolate contribution of each proposed component.
+- **Ethics of AI section**: required if model impacts human decision-making. Discuss fairness, accountability, transparency.
 - **Explain AI methods for HCI audience**: not all CHI reviewers are ML experts. Include intuitive explanations alongside formal notation. Use diagrams to illustrate model architecture and data flow.
 
 # Page Budget Discipline
@@ -120,4 +120,4 @@ Do not log routine operations. The orchestrator collects these and routes to the
 - Reproducibility details present (hyperparameters, compute, seeds).
 - Double-blind compliant: no author or institution identification.
 - Code/data availability statement included.
-- **No forbidden sentence structures**: zero em-dash parenthetical insertions (`— xxx —`), zero trailing participial phrases (`, verb-ing xxx`), zero comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule. Scan every draft for these patterns and rewrite before delivering.
+- **No forbidden sentence structures**: **No em-dashes (—) anywhere in generated prose.** This is an absolute ban covering ALL forms: paired parentheticals (`— phrase —`), single asides (`X — Y`), appositives (`X — an approach that`), and list introductions (`X — namely, Y`). Replace with commas, periods, colons, "which"/"that" clauses, or parentheses. Scan every draft for the literal character — (U+2014) before delivering. Also banned: trailing participial phrases (`, verb-ing xxx`), comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule.

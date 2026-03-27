@@ -17,7 +17,7 @@ The orchestrator drives a state-machine pipeline that reads `state.json`, determ
 | init | orchestrator |
 | metadata | orchestrator (interactive) → `r01-foa-finder` (if NIH context missing) |
 | ideation | `r01-ideation` → `r01-novelty-checker` (sub-step) |
-| investigator verification | orchestrator (blocking gate — verify all PIs findable before literature) |
+| investigator verification | orchestrator (blocking gate, verify all PIs findable before literature) |
 | literature | `literature` × 3 (parallel: hci, healthcare, ai) → merge |
 | outline | `writer-integrator` |
 | writing | `writer-integrator` + domain writers |
@@ -50,7 +50,7 @@ If all metadata is already present in `project.yaml`, this phase auto-completes 
 
 See `references/pipeline.md` Phase 1.5 for the full specification.
 
-# Investigator Verification Gate (Phase 2.5 — between ideation and literature)
+# Investigator Verification Gate (Phase 2.5, between ideation and literature)
 
 **BLOCKING GATE**: Do NOT start literature search until all investigators are verified. Literature agents need investigator names, institutions, and ideally scholar_ids/ORCIDs to search for team publications effectively. Missing or incorrect PI info wastes entire literature search cycles.
 
@@ -81,11 +81,11 @@ The orchestrator first determines the ideation mode:
 - **Full mode**: If only a topic is provided. Spawn ideation agent with "Use full mode."
 
 In full mode, the ideation agent runs a 5-step DIVERGE/DEVELOP/FILTER/CONVERGE/CHECKPOINT flow:
-1. **DIVERGE** — generate a broad set of candidate ideas without filtering.
-2. **DEVELOP** — expand each candidate with a 5-field chain-of-thought (problem, mechanism, novelty claim, feasibility risk, NIH fit).
-3. **FILTER** — apply feasibility criteria; drop ideas that fail on budget, timeline, or team capacity.
-4. **CONVERGE** — rank surviving ideas and select the top 3-5 for novelty checking.
-5. **CHECKPOINT** — pause for user idea selection after novelty verdicts are in.
+1. **DIVERGE**: generate a broad set of candidate ideas without filtering.
+2. **DEVELOP**: expand each candidate with a 5-field chain-of-thought (problem, mechanism, novelty claim, feasibility risk, NIH fit).
+3. **FILTER**: apply feasibility criteria; drop ideas that fail on budget, timeline, or team capacity.
+4. **CONVERGE**: rank surviving ideas and select the top 3-5 for novelty checking.
+5. **CHECKPOINT**: pause for user idea selection after novelty verdicts are in.
 
 After FILTER, the orchestrator spawns `r01-novelty-checker` as a sub-step. The novelty checker runs background literature retrieval, applies a dual-bias protocol, and writes `ideas/novelty_report.json`. The ideation agent reads this report before CONVERGE to incorporate novelty verdicts into final rankings.
 
@@ -98,7 +98,7 @@ After FILTER, the orchestrator spawns `r01-novelty-checker` as a sub-step. The n
    - Task prompt: "You are the {domain} literature agent. Read the literature skill at {skill_path} and follow its instructions. Your domain assignment is: {domain}. Project path: ~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/. Find 10-18 references for the {domain} domain. IMPORTANT: Run Step 0 (Investigator Publication Search) and Step 0.5 (Seed Reference Ingestion from project.yaml.seed_references) BEFORE domain queries. Use citation graph traversal and iterative query refinement as specified in the skill. Write to literature/references_{domain}.json and literature/gaps_{domain}.md."
    - Spawn call: `spawn(task=..., label="lit-{domain}", max_iterations=30, model=..., workspace="~/Dropbox/AgentWorkspace/PaperAutoGen/{project}/")`
    - Each agent runs multi-round search (up to 3 rounds), snowball sampling via Semantic Scholar citation graph, and produces claim-evidence mappings, contradiction detection, and evidence synthesis tables.
-4. **State tracking (MANDATORY — do this for EVERY spawn and retry):**
+4. **State tracking (MANDATORY, do this for EVERY spawn and retry):**
    - **Before each spawn**: Read `state.json`, set `literature_parallel.{domain}.status = "running"`, increment `attempt` by 1, write `state.json` back. Append an event: `{"timestamp": ..., "event": "literature_spawn", "domain": "{domain}", "attempt": N}`.
    - **On agent success**: Set `literature_parallel.{domain}.status = "complete"`, write `state.json`. Append event: `{"timestamp": ..., "event": "literature_complete", "domain": "{domain}", "attempt": N}`.
    - **On agent failure**: Set `literature_parallel.{domain}.status = "failed"`, write `state.json`. Append event with failure reason: `{"timestamp": ..., "event": "literature_failed", "domain": "{domain}", "attempt": N, "reason": "..."}`.
@@ -154,7 +154,7 @@ REQUIRED INPUTS (read these before writing):
 
 INSTRUCTIONS:
 1. Read the skill file first for your role and quality standards.
-2. Read outline.md and locate YOUR assigned section(s) — use the heading structure and word targets there.
+2. Read outline.md and locate YOUR assigned section(s): use the heading structure and word targets there.
 3. Read refs.json and gaps.md to incorporate citations and address gaps.
 4. Read 1-2 prior examples for NIH voice calibration.
 5. Write each section to its output file. Use markdown with proper heading hierarchy.
@@ -162,7 +162,7 @@ INSTRUCTIONS:
 7. Cite references using [AuthorYear] format matching refs.json entries.
 ```
 
-Do NOT ask the subagent to update state.json — the orchestrator tracks completion externally.
+Do NOT ask the subagent to update state.json, the orchestrator tracks completion externally.
 
 # Pre-Review Self-Check (Phase 7 Gate)
 Before spawning the three domain reviewers, the orchestrator MAY run a quick self-review by spawning `writer-integrator` in a lightweight review mode. This catches obvious issues (missing sections, broken citations, unresolved placeholders, word-count violations) cheaply, before committing to the more expensive parallel reviewer spawns.
@@ -186,6 +186,12 @@ If the self-check finds blocking issues, route back to writing for targeted fixe
 - The panel writes one `findings_memory_entry` per round to `ideas/findings_memory.json`.
 - At the start of each revision, the reviser reads the full `findings_memory.json` array to understand cumulative findings across all prior rounds, not just the most recent critique.
 - Loop control: continue while `score < 5` AND `review_round < max_review_rounds`. When either condition breaks, exit to export.
+
+## Minimum Review Rounds Policy
+**The pipeline MUST complete at least 2 full review→revision cycles before presenting results to the user at a checkpoint.** Round 1 catches obvious issues; Round 2 stress-tests the fixes and catches second-order problems. Only after Round 2 should the orchestrator pause for user feedback.
+- `min_review_rounds`: 2 (hardcoded)
+- After Round 1 revision → automatically route back to review without user checkpoint.
+- After Round 2 revision → present to user. If user requests more and `review_round < max_review_rounds`, continue.
 
 # Post-Export Evolution (Phase 11)
 After the export phase completes and the user has approved the final package, spawn the `evolution` agent to extract cross-project learning.
@@ -265,13 +271,13 @@ After each subagent completes (any phase), check if the agent's output includes 
 2. Accumulate in `feedback/agent_learnings_{project}.json` (append-only, tagged with agent name and phase).
 3. Route to `evolution` during the evolution phase for pattern detection.
 
-Do NOT spawn the evolution agent for each individual learning — batch them and process during the evolution phase.
+Do NOT spawn the evolution agent for each individual learning, batch them and process during the evolution phase.
 
 # State Management
 - Always read `state.json` before dispatching or transitioning phases.
 - Write phase/task updates atomically in `state.json`.
 - Append lifecycle events to `events.jsonl` (`spawned`, `completed`, `failed`, `checkpoint_wait`, `checkpoint_resumed`).
-- Append per-agent cost entries to `cost.jsonl` after each subagent completion. Each entry must include: `timestamp`, `phase`, `agent` (skill name), `model`, `prompt_tokens`, `completion_tokens`, `cost_usd` (estimated from token counts), and `task_description`. If token counts are not available from the spawn result, record `null` and note in the event. The `cost.jsonl` should never be empty after any phase completes — at minimum, record a zero-cost entry for phases that use no subagents (e.g., init).
+- Append per-agent cost entries to `cost.jsonl` after each subagent completion. Each entry must include: `timestamp`, `phase`, `agent` (skill name), `model`, `prompt_tokens`, `completion_tokens`, `cost_usd` (estimated from token counts), and `task_description`. If token counts are not available from the spawn result, record `null` and note in the event. The `cost.jsonl` should never be empty after any phase completes, at minimum, record a zero-cost entry for phases that use no subagents (e.g., init).
 - Treat `events.jsonl` and `cost.jsonl` as append-only ledgers.
 
 # Workspace Constraint

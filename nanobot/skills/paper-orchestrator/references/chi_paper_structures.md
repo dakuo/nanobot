@@ -30,7 +30,7 @@ The most common CHI contribution type. Reports findings from studies with human 
 
 **Common mistakes:**
 - Burying the research question deep in the introduction instead of stating it early and clearly.
-- Conflating results and discussion — keep findings separate from interpretation.
+- Conflating results and discussion. Keep findings separate from interpretation.
 - Over-claiming generalizability from a small or homogeneous sample.
 - Missing ethical considerations (IRB, informed consent, data handling).
 
@@ -62,9 +62,9 @@ Second most common. Presents a novel interactive system, tool, or design.
 - Discussion of design trade-offs and lessons learned.
 
 **Common mistakes:**
-- All system description, no evaluation — CHI requires evaluation, not just a demo.
+- All system description, no evaluation. CHI requires evaluation, not just a demo.
 - Evaluation that only measures usability without assessing the core contribution.
-- Missing design rationale — "we built X" without "because Y informed by Z".
+- Missing design rationale: "we built X" without "because Y informed by Z".
 - Over-engineering implementation details at the expense of design insight.
 
 ---
@@ -94,9 +94,9 @@ Introduces a new method for studying or designing interactive systems.
 - Practical guidance for adoption.
 
 **Common mistakes:**
-- Proposing a method without validating it — theoretical description alone is insufficient.
-- No comparison to existing alternatives — reviewers want to know why this over established approaches.
-- Overly abstract description — need concrete steps and decision points.
+- Proposing a method without validating it. Theoretical description alone is insufficient.
+- No comparison to existing alternatives. Reviewers want to know why this over established approaches.
+- Overly abstract description. Need concrete steps and decision points.
 
 ---
 
@@ -118,15 +118,15 @@ Advances understanding through new conceptual frameworks, models, or theoretical
 
 **What reviewers expect:**
 - Strong grounding in existing theory with clear identification of the gap.
-- The framework must be more than a literature review — it must synthesize and generate new understanding.
+- The framework must be more than a literature review; it must synthesize and generate new understanding.
 - At least one concrete application or illustration showing the framework in use.
 - Implications for both research and practice.
 - Engagement with potential counter-arguments.
 
 **Common mistakes:**
-- Presenting a literature review as a theoretical contribution — synthesis is required, not just aggregation.
-- Framework too abstract to be actionable — needs concrete dimensions, categories, or relationships.
-- No illustration of application — reviewers need to see how the framework works in practice.
+- Presenting a literature review as a theoretical contribution. Synthesis is required, not just aggregation.
+- Framework too abstract to be actionable. Needs concrete dimensions, categories, or relationships.
+- No illustration of application. Reviewers need to see how the framework works in practice.
 
 ---
 
@@ -148,15 +148,15 @@ Provides a comprehensive survey or systematic review of a research area.
 **What reviewers expect:**
 - Rigorous, reproducible search methodology (databases, queries, inclusion/exclusion criteria, PRISMA flow).
 - Complete coverage of the target area with quantified corpus statistics.
-- Analytical synthesis — taxonomy, themes, or framework emerging from the review.
+- Analytical synthesis: taxonomy, themes, or framework emerging from the review.
 - Forward-looking research agenda identifying gaps and opportunities.
 - The review must advance understanding beyond what individual papers provide.
 
 **Common mistakes:**
-- Incomplete search methodology — missing databases, date ranges, or exclusion criteria.
-- Descriptive rather than analytical — listing papers without synthesizing themes.
-- No research agenda — a review without forward-looking implications has limited value.
-- Outdated corpus — missing recent key papers is a red flag.
+- Incomplete search methodology: missing databases, date ranges, or exclusion criteria.
+- Descriptive rather than analytical, listing papers without synthesizing themes.
+- No research agenda. A review without forward-looking implications has limited value.
+- Outdated corpus: missing recent key papers is a red flag.
 
 ---
 
@@ -177,14 +177,14 @@ Presents a provocative argument, position, or critical analysis. Often submitted
 **What reviewers expect:**
 - A clear, provocative thesis stated early.
 - Well-grounded argument (not opinion without evidence).
-- Engagement with opposing viewpoints — steel-man the counter-position.
+- Engagement with opposing viewpoints, steel-man the counter-position.
 - Concrete implications for the CHI community's research or practice.
 - Compelling writing that holds the reader's attention.
 
 **Common mistakes:**
-- Provocation without substance — being controversial is not enough; the argument must be well-reasoned.
-- Ignoring counter-arguments — one-sided arguments are easily dismissed.
-- Too broad — focus on a specific, defensible claim rather than trying to critique an entire field.
+- Provocation without substance, being controversial is not enough; the argument must be well-reasoned.
+- Ignoring counter-arguments, one-sided arguments are easily dismissed.
+- Too broad, focus on a specific, defensible claim rather than trying to critique an entire field.
 
 ---
 
@@ -214,7 +214,7 @@ Introduces a new benchmark, evaluation set, or publicly released dataset for the
 - Ethical considerations: consent, privacy, potential for misuse.
 
 **Common mistakes:**
-- Dataset too small or narrow to generalize — reviewers want community-scale resources.
-- Missing baselines — a dataset without baseline results has limited immediate utility.
-- Inadequate documentation — metadata, codebook, and usage guidelines are essential.
+- Dataset too small or narrow to generalize, reviewers want community-scale resources.
+- Missing baselines, a dataset without baseline results has limited immediate utility.
+- Inadequate documentation, metadata, codebook, and usage guidelines are essential.
 - No ethical review or consent documentation for human-generated data.
