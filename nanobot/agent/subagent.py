@@ -61,7 +61,11 @@ class SubagentManager:
         """Spawn a subagent to execute a task in the background."""
         task_id = str(uuid.uuid4())[:8]
         display_label = label or task[:30] + ("..." if len(task) > 30 else "")
-        origin = {"channel": origin_channel, "chat_id": origin_chat_id}
+        origin = {
+            "channel": origin_channel,
+            "chat_id": origin_chat_id,
+            "session_key": session_key or f"{origin_channel}:{origin_chat_id}",
+        }
 
         # Resolve workspace override
         ws = Path(workspace).expanduser().resolve() if workspace else self.workspace
