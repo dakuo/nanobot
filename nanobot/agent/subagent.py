@@ -54,6 +54,7 @@ class SubagentManager:
         origin_channel: str = "cli",
         origin_chat_id: str = "direct",
         session_key: str | None = None,
+        metadata: dict[str, Any] | None = None,
         max_iterations: int | None = None,
         model: str | None = None,
         workspace: str | None = None,
@@ -65,6 +66,7 @@ class SubagentManager:
             "channel": origin_channel,
             "chat_id": origin_chat_id,
             "session_key": session_key or f"{origin_channel}:{origin_chat_id}",
+            "metadata": metadata or {},
         }
 
         # Resolve workspace override
@@ -102,7 +104,7 @@ class SubagentManager:
         task_id: str,
         task: str,
         label: str,
-        origin: dict[str, str],
+        origin: dict[str, Any],
         max_iterations: int | None = None,
         model: str | None = None,
         workspace_override: Path | None = None,
@@ -204,7 +206,7 @@ class SubagentManager:
         label: str,
         task: str,
         result: str,
-        origin: dict[str, str],
+        origin: dict[str, Any],
         status: str,
     ) -> None:
         """Announce the subagent result to the main agent via the message bus."""
@@ -219,12 +221,15 @@ Result:
 
 Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not mention technical details like "subagent" or task IDs."""
 
-        # Inject as system message to trigger main agent
+        # Inject as system message to trigger main agent.
+        # Carry forward the original inbound metadata (e.g. Slack thread_ts)
+        # so the reply routes back to the correct thread.
         msg = InboundMessage(
             channel="system",
             sender_id="subagent",
             chat_id=f"{origin['channel']}:{origin['chat_id']}",
             content=announce_content,
+            metadata=origin.get("metadata", {}),
         )
 
         await self.bus.publish_inbound(msg)

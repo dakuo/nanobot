@@ -183,15 +183,18 @@ class AgentLoop:
         chat_id: str,
         message_id: str | None = None,
         session_key: str | None = None,
+        metadata: dict | None = None,
     ) -> None:
         """Update context for all tools that need routing info."""
         for name in ("message", "spawn", "cron"):
             if tool := self.tools.get(name):
                 if hasattr(tool, "set_context"):
                     if name == "message":
-                        tool.set_context(channel, chat_id, message_id)
+                        tool.set_context(channel, chat_id, message_id, metadata=metadata)
                     elif name == "spawn":
-                        tool.set_context(channel, chat_id, session_key=session_key)
+                        tool.set_context(
+                            channel, chat_id, session_key=session_key, metadata=metadata
+                        )
                     else:
                         tool.set_context(channel, chat_id)
 
@@ -227,6 +230,7 @@ class AgentLoop:
         channel: str = "cli",
         chat_id: str = "direct",
         message_id: str | None = None,
+        metadata: dict | None = None,
     ) -> tuple[str | None, list[str], list[dict]]:
         """Run the agent iteration loop.
 
@@ -311,7 +315,7 @@ class AgentLoop:
 
                 # Re-bind tool context right before execution so that
                 # concurrent sessions don't clobber each other's routing.
-                self._set_tool_context(channel, chat_id, message_id)
+                self._set_tool_context(channel, chat_id, message_id, metadata=metadata)
 
                 # Execute all tool calls concurrently — the LLM batches
                 # independent calls in a single response on purpose.
@@ -508,7 +512,9 @@ class AgentLoop:
             key = f"{channel}:{chat_id}"
             session = self.sessions.get_or_create(key)
             await self.memory_consolidator.maybe_consolidate_by_tokens(session)
-            self._set_tool_context(channel, chat_id, msg.metadata.get("message_id"))
+            self._set_tool_context(
+                channel, chat_id, msg.metadata.get("message_id"), metadata=msg.metadata
+            )
             history = session.get_history(max_messages=0)
             current_role = (
                 "user"  # Always user — subagent results are inputs for the main agent to process
@@ -525,6 +531,7 @@ class AgentLoop:
                 channel=channel,
                 chat_id=chat_id,
                 message_id=msg.metadata.get("message_id"),
+                metadata=msg.metadata,
             )
             self._save_turn(session, all_msgs, 1 + len(history))
             self.sessions.save(session)
@@ -533,6 +540,7 @@ class AgentLoop:
                 channel=channel,
                 chat_id=chat_id,
                 content=final_content or "Background task completed.",
+                metadata=dict(msg.metadata or {}),
             )
 
         preview = msg.content[:80] + "..." if len(msg.content) > 80 else msg.content
@@ -550,7 +558,11 @@ class AgentLoop:
         await self.memory_consolidator.maybe_consolidate_by_tokens(session)
 
         self._set_tool_context(
-            msg.channel, msg.chat_id, msg.metadata.get("message_id"), session_key=key
+            msg.channel,
+            msg.chat_id,
+            msg.metadata.get("message_id"),
+            session_key=key,
+            metadata=msg.metadata,
         )
         if message_tool := self.tools.get("message"):
             if isinstance(message_tool, MessageTool):
@@ -586,6 +598,7 @@ class AgentLoop:
             channel=msg.channel,
             chat_id=msg.chat_id,
             message_id=msg.metadata.get("message_id"),
+            metadata=msg.metadata,
         )
 
         if final_content is None:
