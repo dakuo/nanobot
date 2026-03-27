@@ -4,6 +4,7 @@ import asyncio
 import re
 from typing import Any
 
+import httpx
 from loguru import logger
 from slack_sdk.socket_mode.request import SocketModeRequest
 from slack_sdk.socket_mode.response import SocketModeResponse
@@ -63,6 +64,7 @@ class SlackChannel(BaseChannel):
         self._web_client: AsyncWebClient | None = None
         self._socket_client: SocketModeClient | None = None
         self._bot_user_id: str | None = None
+        self._handled_file_ts: set[str] = set()
 
     async def start(self) -> None:
         """Start the Slack Socket Mode client."""
@@ -170,17 +172,27 @@ class SlackChannel(BaseChannel):
         sender_id = event.get("user")
         chat_id = event.get("channel")
 
-        # Ignore bot/system messages (any subtype = not a normal user message)
-        if event.get("subtype"):
+        # Ignore bot/system subtypes, but allow file_share (user messages with attachments)
+        subtype = event.get("subtype")
+        if subtype and subtype != "file_share":
             return
         if self._bot_user_id and sender_id == self._bot_user_id:
             return
 
         # Avoid double-processing: Slack sends both `message` and `app_mention`
-        # for mentions in channels. Prefer `app_mention`.
+        # for mentions in channels. Prefer `app_mention` for text-only messages,
+        # but prefer `message` when files are attached (app_mention never has files).
         text = event.get("text") or ""
+        has_files = bool(event.get("files"))
         if event_type == "message" and self._bot_user_id and f"<@{self._bot_user_id}>" in text:
-            return
+            if not has_files:
+                return
+            self._handled_file_ts.add(event.get("ts", ""))
+        if event_type == "app_mention":
+            ts = event.get("ts", "")
+            if ts in self._handled_file_ts:
+                self._handled_file_ts.discard(ts)
+                return
 
         # Debug: log basic event shape
         logger.debug(
@@ -222,11 +234,14 @@ class SlackChannel(BaseChannel):
         # Thread-scoped session key (each thread = separate conversation)
         session_key = f"slack:{chat_id}:{thread_ts}" if thread_ts else None
 
+        media_paths = await self._download_slack_files(event)
+
         try:
             await self._handle_message(
                 sender_id=sender_id,
                 chat_id=chat_id,
-                content=text,
+                content=text or ("[file attachment]" if media_paths else ""),
+                media=media_paths,
                 metadata={
                     "slack": {
                         "event": event,
@@ -260,6 +275,48 @@ class SlackChannel(BaseChannel):
                 )
             except Exception as e:
                 logger.debug("Slack done reaction failed: {}", e)
+
+    _MAX_FILE_BYTES = 50 * 1024 * 1024  # 50 MB
+
+    async def _download_slack_files(self, event: dict[str, Any]) -> list[str]:
+        """Download file attachments from a Slack event, return local paths."""
+        from nanobot.config.paths import get_media_dir
+
+        files = event.get("files")
+        if not files:
+            return []
+
+        media_dir = get_media_dir("slack")
+        media_dir.mkdir(parents=True, exist_ok=True)
+        paths: list[str] = []
+
+        for file_info in files:
+            url = file_info.get("url_private_download")
+            if not url:
+                continue
+            filename = file_info.get("name") or "attachment"
+            file_id = file_info.get("id") or "unknown"
+            size = file_info.get("size") or 0
+            if size and size > self._MAX_FILE_BYTES:
+                logger.warning("Slack file {} too large ({} bytes), skipping", filename, size)
+                continue
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(
+                        url,
+                        headers={"Authorization": f"Bearer {self.config.bot_token}"},
+                        follow_redirects=True,
+                        timeout=60,
+                    )
+                    resp.raise_for_status()
+                file_path = media_dir / f"{file_id}_{filename.replace('/', '_')}"
+                file_path.write_bytes(resp.content)
+                paths.append(str(file_path))
+                logger.debug("Downloaded Slack file: {} -> {}", filename, file_path)
+            except Exception as e:
+                logger.warning("Failed to download Slack file {}: {}", filename, e)
+
+        return paths
 
     def _is_allowed(self, sender_id: str, chat_id: str, channel_type: str) -> bool:
         if channel_type == "im":

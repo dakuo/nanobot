@@ -8,10 +8,14 @@ try:
 except ImportError:
     pytest.skip("Slack dependencies not installed (slack-sdk)", allow_module_level=True)
 
+from slack_sdk.socket_mode.request import SocketModeRequest
+from slack_sdk.socket_mode.response import SocketModeResponse
+
 from nanobot.bus.events import OutboundMessage
 from nanobot.bus.queue import MessageBus
 from nanobot.channels.slack import SlackChannel
 from nanobot.channels.slack import SlackConfig
+from nanobot.channels.slack import SlackDMConfig
 
 
 class _FakeAsyncWebClient:
@@ -80,6 +84,11 @@ class _FakeAsyncWebClient:
                 "timestamp": timestamp,
             }
         )
+
+
+class _FakeSocketModeClient:
+    async def send_socket_mode_response(self, response: SocketModeResponse) -> None:
+        pass
 
 
 @pytest.mark.asyncio
@@ -151,3 +160,72 @@ async def test_send_updates_reaction_when_final_response_sent() -> None:
     assert fake_web.reactions_add_calls == [
         {"channel": "C123", "name": "white_check_mark", "timestamp": "1700000000.000100"}
     ]
+
+
+@pytest.mark.asyncio
+async def test_file_share_event_not_dropped() -> None:
+    """Verify that file_share events (messages with file attachments) are processed."""
+    config = SlackConfig(
+        enabled=True,
+        bot_token="xoxb-test",
+        reply_in_thread=True,
+        allow_from=["*"],
+        dm=SlackDMConfig(enabled=True, policy="open"),
+    )
+    channel = SlackChannel(config, MessageBus())
+    channel._bot_user_id = "B123"
+    channel._web_client = _FakeAsyncWebClient()  # type: ignore
+
+    # Track calls to _handle_message
+    handle_message_calls: list[dict[str, object]] = []
+
+    async def mock_handle_message(**kwargs: object) -> None:
+        handle_message_calls.append(kwargs)  # type: ignore
+
+    channel._handle_message = mock_handle_message  # type: ignore
+
+    # Mock _download_slack_files to return a test file path
+    async def mock_download_slack_files(event: dict[str, object]) -> list[str]:
+        return ["/tmp/test.pdf"]
+
+    channel._download_slack_files = mock_download_slack_files  # type: ignore
+
+    # Create a file_share event
+    event = {
+        "type": "message",
+        "subtype": "file_share",
+        "user": "U_SENDER",
+        "channel": "C123",
+        "channel_type": "im",
+        "text": "check this paper",
+        "files": [
+            {
+                "id": "F001",
+                "name": "paper.pdf",
+                "url_private_download": "https://files.slack.com/...",
+                "mimetype": "application/pdf",
+            }
+        ],
+        "ts": "1700000000.000200",
+    }
+
+    # Create a SocketModeRequest
+    request = SocketModeRequest(
+        type="events_api",
+        envelope_id="test",
+        payload={"event": event},
+    )
+
+    # Call _on_socket_request
+    fake_socket_client = _FakeSocketModeClient()
+    await channel._on_socket_request(fake_socket_client, request)  # type: ignore
+
+    # Verify _handle_message was called
+    assert len(handle_message_calls) == 1, "file_share event should not be dropped"
+
+    # Verify the call had the correct parameters
+    call = handle_message_calls[0]
+    assert call["sender_id"] == "U_SENDER"
+    assert call["chat_id"] == "C123"
+    assert call["content"] == "check this paper"
+    assert call["media"] == ["/tmp/test.pdf"], "media should contain downloaded file path"
