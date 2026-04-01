@@ -99,11 +99,184 @@ spawn(
 
 If the user asks to edit an existing file, the spawned subagent reads the file, applies changes, and writes to the OUTPUT FILE path (incremented version — never overwrite the input). If the user asks to write a new section with no prior draft, the subagent creates the file from scratch at OUTPUT FILE following the skill guidelines.
 
+**After the writer subagent completes: proceed to the "Ad-Hoc Review Loop" section below.** Do NOT present the draft to the user and stop. The review loop is mandatory for all ad-hoc writes.
+
 **Edge cases for version resolution:**
 - Drafts may use informal names (`intro_v3.md` vs `introduction_v3.md`). Always match against the canonical section name from `paper_project.yaml.sections[]`.
 - If the user requests a specific version ("edit introduction v3"), use that version as INPUT FILE but still set OUTPUT FILE to `latest_version + 1` (never overwrite earlier versions — they are the revision history).
 - If both `docs/drafts/` and project root contain versioned files, prefer `docs/drafts/`. Root copies may be assembly artifacts from Phase 4 batch F.
 - After the subagent completes successfully, update `state.json.writing_parallel.{section_name}.draft_version` to the new output version number.
+
+# Ad-Hoc Review Loop (MANDATORY — NEVER SKIP)
+
+After ANY ad-hoc writing, editing, or revision task completes successfully, the orchestrator MUST automatically trigger a review→revision loop on the produced output. This is not optional. Every ad-hoc write goes through at least `min_review_rounds` (2) full review→revision cycles before presenting results to the user. Do NOT present the first draft to the user and wait — immediately proceed to the review loop.
+
+## When This Section Applies
+This section applies when:
+- A subagent spawned via the "Ad-Hoc Writing Requests" section above announces successful completion.
+- The user asked to "write", "edit", "rewrite", "improve", or "revise" a specific section outside the formal pipeline.
+
+This section does NOT apply when:
+- The formal pipeline (Phases 1-8) is running. In that case, Phase 6/7 handle the review→revision loop.
+- The user explicitly says "just write it, no review" or "skip the review".
+
+## Step 1: Initialize Ad-Hoc Review State
+When the writer subagent completes:
+
+1. Confirm the output file exists and is non-empty.
+2. Update `state.json.writing_parallel.{section_name}.draft_version` to the new version number.
+3. Initialize (or reset) ad-hoc review tracking in `state.json`:
+   ```json
+   {
+     "adhoc_review": {
+       "section": "{section_name}",
+       "current_draft": "{path_to_output_file}",
+       "review_round": 0,
+       "min_review_rounds": 2,
+       "max_review_rounds": 3,
+       "review_parallel": {},
+       "status": "starting_review"
+     }
+   }
+   ```
+4. Append event: `{event: "adhoc_review_loop_started", section: "{section_name}", draft: "{path}", timestamp: "..."}`.
+5. Proceed immediately to Step 2.
+
+## Step 2: Spawn Domain Reviewers (Parallel)
+1. Read `paper_project.yaml.domain_tags` to determine which reviewers to spawn.
+2. For each domain tag, create a tracking entry in `state.json.adhoc_review.review_parallel`:
+   ```json
+   {
+     "reviewer_{domain}": {"agent": "reviewer-{domain}", "status": "pending", "attempt": 0}
+   }
+   ```
+3. Spawn each domain reviewer. Use this template:
+   ```
+   spawn(
+     task="You are a {domain} reviewer subagent. Read the reviewer-{domain} skill at nanobot/skills/reviewer-{domain}/SKILL.md and follow its instructions.\n\nPROJECT: {project_path}\nDOCUMENT_TYPE: paper\nVENUE: {venue}\nCONTRIBUTION_TYPE: {contribution_type}\nREVIEW_SCOPE: [{section_name}]\nINPUT DRAFT: {current_draft_path}\nOUTPUT: {project_path}/reviews/review_{domain}_r{review_round}.json\nREVIEW_ROUND: {review_round}\n\nMANDATORY READS:\n- Project config: {project_path}/paper_project.yaml\n- Draft to review: {current_draft_path}\n- Findings memory: {project_path}/reviews/findings_memory.json (if exists, for prior round context)\n- Venue review criteria: nanobot/skills/paper-orchestrator/references/venue_review_criteria.md\n\nFocus your review on the {section_name} section. Use the venue-appropriate scoring scale for {venue}.",
+     label="reviewer-{domain}-r{review_round}",
+     max_iterations=30,
+     workspace="{project_path}"
+   )
+   ```
+4. After each spawn, mark its entry as `"running"` in `state.json.adhoc_review.review_parallel`.
+5. Append event for each spawn: `{event: "adhoc_reviewer_spawned", domain: "{domain}", round: {review_round}}`.
+
+**IMPORTANT: After spawning all reviewers, STOP AND WAIT.** Do not proceed until you receive system messages confirming each reviewer has completed. When you receive a completion notification for a reviewer:
+- Parse which reviewer completed (from the label).
+- Mark its entry as `"complete"` in `state.json.adhoc_review.review_parallel`.
+- Check if ALL reviewers are now `"complete"`. If not, continue waiting.
+- If ALL reviewers are `"complete"`, proceed to Step 3.
+
+If a reviewer fails: mark as `"failed"`, increment `attempt`. If `attempt < 3`, re-spawn that reviewer only. If `attempt >= 3`, mark as `"blocked"` and present error to user.
+
+## Step 3: Spawn Reviewer Panel (Fan-In)
+When ALL domain reviewers have completed:
+
+1. Verify all review JSONs exist: `reviews/review_{domain}_r{review_round}.json` for each domain.
+2. Spawn the reviewer panel:
+   ```
+   spawn(
+     task="You are the review panel synthesizer. Read the reviewer-panel skill at nanobot/skills/reviewer-panel/SKILL.md and follow its instructions.\n\nPROJECT: {project_path}\nDOCUMENT_TYPE: paper\nVENUE: {venue}\nCONTRIBUTION_TYPE: {contribution_type}\nREVIEW_ROUND: {review_round}\nREVIEW_SCOPE: [{section_name}]\n\nDOMAIN REVIEWS:\n{list all review_{domain}_r{review_round}.json paths}\n\nOUTPUT FILES:\n- Panel summary: {project_path}/reviews/panel_summary_r{review_round}.md\n- Panel decision: {project_path}/reviews/panel_decision_r{review_round}.json\n\nMANDATORY READS:\n- All domain review JSONs listed above\n- Findings memory: {project_path}/reviews/findings_memory.json (for prior round context)\n- Project config: {project_path}/paper_project.yaml\n- Draft: {current_draft_path}\n\nSynthesize all domain reviews. Produce a panel decision with recommendation (accept/minor_revision/major_revision/reject), priority_revisions list, and findings_memory_entry. Append the findings_memory_entry to reviews/findings_memory.json.",
+     label="panel-r{review_round}",
+     max_iterations=30,
+     workspace="{project_path}"
+   )
+   ```
+3. Update `state.json.adhoc_review.status = "panel_running"`.
+4. **WAIT** for the panel to complete. When the panel completion notification arrives, proceed to Step 4.
+
+## Step 4: Route Based on Panel Decision
+When the reviewer panel completes:
+
+1. Read `reviews/panel_decision_r{review_round}.json`.
+2. Extract the `recommendation` field (one of: `"accept"`, `"minor_revision"`, `"major_revision"`, `"reject"`).
+3. Increment `state.json.adhoc_review.review_round`.
+4. Apply routing logic:
+
+   **Case A — Accept AND `review_round >= min_review_rounds`:**
+   - Mark `state.json.adhoc_review.status = "complete"`.
+   - Present the final draft and panel summary to the user.
+   - Append event: `{event: "adhoc_review_complete", section: "{section_name}", rounds: {review_round}, decision: "accept"}`.
+   - DONE.
+
+   **Case B — Accept BUT `review_round < min_review_rounds`:**
+   - The minimum review rounds policy overrides early "accept". The first round often misses issues that a second round catches.
+   - Treat as if the decision were `"minor_revision"` — proceed to Step 5.
+   - Log: `{event: "adhoc_early_accept_overridden", round: {review_round}, reason: "min_review_rounds not met"}`.
+
+   **Case C — `minor_revision` or `major_revision` AND `review_round < max_review_rounds`:**
+   - Proceed to Step 5 (Final Writer Pass).
+
+   **Case D — `review_round >= max_review_rounds`:**
+   - Mark `state.json.adhoc_review.status = "max_rounds_reached"`.
+   - Present the current draft + panel summary + findings history to the user.
+   - Append event: `{event: "adhoc_review_max_rounds", section: "{section_name}", rounds: {review_round}}`.
+   - DONE (user decides next steps).
+
+   **Case E — `reject`:**
+   - Present the panel decision to the user with the specific concerns.
+   - Ask whether to attempt revision or abandon.
+   - If user wants revision and `review_round < max_review_rounds`, proceed to Step 5.
+   - Otherwise, DONE.
+
+## Step 5: Final Writer Pass (Incorporate Feedback)
+When revision is needed:
+
+1. Read `reviews/panel_decision_r{N}.json` for the `priority_revisions` list.
+2. Read `reviews/findings_memory.json` for cumulative findings across rounds.
+3. Resolve the latest draft version using the same version discovery logic from "Ad-Hoc Writing Requests" (list files, parse version numbers as integers, take max).
+4. Determine the correct writer using the Writer Routing Table (same writer type as the original write).
+5. Spawn the writer with feedback incorporation instructions:
+   ```
+   spawn(
+     task="You are a {role} subagent. Read the {skill_name} skill at {skill_path} and follow its instructions.\n\nPROJECT: {project_path}\nDOCUMENT_TYPE: paper\nVENUE: {venue}\nCONTRIBUTION_TYPE: {contribution_type}\nTASK: Incorporate reviewer feedback into {section_name} (revision round {review_round})\nSECTION: {section_name}\nINPUT FILE: {current_draft_path}\nOUTPUT FILE: {next_version_path}\n\nREVIEWER FEEDBACK (read these carefully before revising):\n- Panel decision: {project_path}/reviews/panel_decision_r{N}.json\n- Cumulative findings: {project_path}/reviews/findings_memory.json\n- Domain reviews: {project_path}/reviews/review_*_r{N}.json\n\nREVISION INSTRUCTIONS:\n1. Read the panel decision and priority_revisions list FIRST.\n2. Address issues in priority order (highest priority_rank first).\n3. For each revision, mentally note what you changed and why.\n4. Do NOT introduce new content that was not requested by reviewers.\n5. Do NOT remove content that reviewers praised or did not critique.\n6. Maintain the original writing voice and style.\n7. If a reviewer concern conflicts with another reviewer's praise, prioritize the panel's synthesized recommendation.\n8. After revising, run the full POST-GENERATION SCAN (em-dashes, defensive negation, trailing participial phrases, comma+gerund, absolute words).\n\nVERSION VERIFICATION (do BEFORE reading the input file):\n- List {project_path}/docs/drafts/{section_name}_v*.md files yourself\n- Parse version numbers as integers from filenames (pattern: _v followed by digits before .md)\n- Confirm INPUT FILE is the highest-versioned file found. If you find a newer version than what was specified, use it instead and adjust OUTPUT FILE to that version + 1\n- If you overrode INPUT FILE, state the correction at the top of your output\n\nMANDATORY READS (do ALL of these BEFORE writing any prose):\n- Project config: {project_path}/paper_project.yaml\n- Writing voice: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/writing_voice.md (READ the 'Forbidden Sentence Structures' section)\n- HCI writing voice: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/writing_voice_hci.md\n- Style guide: ~/Dropbox/AgentWorkspace/PaperAutoGen/_system/chi_style_guide.md\n- Literature: {project_path}/literature/references.json (if exists)\n\nPOST-GENERATION SCAN (do AFTER writing, BEFORE delivering):\n- Scan output for em-dashes — if found, rewrite those sentences\n- Scan for 'is not to' / 'is not X but' / 'rather than' (defensive negation) — if found, rewrite\n- Scan for trailing participial phrases (', verb-ing') — if found, split into separate sentences\n- Scan for comma+gerund (', having') — if found, restructure\n- Scan for absolute words: 'must' (not in formal specs), 'absolutely', 'undeniably', 'certainly' — if found, replace",
+     label="{section_name}-revision-r{review_round}",
+     max_iterations=30,
+     workspace="{project_path}"
+   )
+   ```
+6. Update `state.json.adhoc_review.current_draft` to the new output path.
+7. Update `state.json.adhoc_review.status = "revision_running"`.
+8. **WAIT** for the writer to complete.
+9. When the writer completes, update `state.json.writing_parallel.{section_name}.draft_version` to the new version.
+10. Loop back to **Step 2** (spawn reviewers on the new draft for the next review round).
+
+## Ad-Hoc Review Loop State Machine
+
+```
+Writer completes (ad-hoc write/edit)
+    │
+    ▼
+Step 1: Init review state
+    │
+    ▼
+Step 2: Spawn domain reviewers (parallel) ◄──────────────────┐
+    │                                                         │
+    ▼  (wait for all reviewers)                               │
+Step 3: Spawn reviewer panel                                  │
+    │                                                         │
+    ▼  (wait for panel)                                       │
+Step 4: Route on decision                                     │
+    │                                                         │
+    ├── accept + rounds ≥ 2 → DONE (present to user)          │
+    ├── accept + rounds < 2 → Step 5 (override)               │
+    ├── revision needed → Step 5                               │
+    └── max rounds → DONE (present to user)                   │
+                                                              │
+Step 5: Spawn writer with feedback ───────────────────────────┘
+    (writer completes → loop back to Step 2)
+```
+
+## Handling Multiple Subagent Completions
+When you receive a system message announcing a subagent completion during the ad-hoc review loop:
+
+1. **Identify which agent completed** by parsing the label from the system message:
+   - Label matches `reviewer-{domain}-r{N}` → a domain reviewer completed. Update `state.json.adhoc_review.review_parallel.reviewer_{domain}.status = "complete"`. Check if all reviewers are done.
+   - Label matches `panel-r{N}` → the panel completed. Read the decision and route.
+   - Label matches `{section}-revision-r{N}` → the writer completed a feedback revision. Loop back to spawn reviewers.
+2. **Always read and update `state.json`** before and after processing each completion.
+3. **Never spawn the next phase prematurely.** Verify all prerequisites are met by reading state, not from memory of prior messages.
 
 # Pipeline Phases
 | Phase | Agent assignment |
@@ -315,6 +488,14 @@ Spawn N domain reviewers matching `paper_project.yaml.domain_tags`:
 6. Panel produces overall recommendation, revision priority matrix, and `findings_memory_entry`.
 7. Panel appends `findings_memory_entry` to `reviews/findings_memory.json`.
 8. If recommendation is not "accept" and `review_round < max_review_rounds`, route to revision.
+
+## Subagent Completion Chaining (Phase 6)
+The orchestrator MUST track reviewer completion explicitly. When you receive a system message announcing a subagent completed:
+
+1. **Domain reviewer completed**: Parse the reviewer label (e.g., `reviewer-hci-r1`). Update `state.json.review_parallel.reviewer_{domain}.status = "complete"`. Then check: are ALL entries in `review_parallel` now `"complete"`? If YES → spawn `reviewer-panel` (step 5 above). If NO → wait for remaining reviewers.
+2. **Reviewer panel completed**: Read `reviews/panel_decision_r{N}.json`. Check the `recommendation` field. Apply the routing logic in step 8 above and the Minimum Review Rounds Policy below. If routing to revision → set `current_phase = "revision"` and spawn the `reviser` skill. If accepting → set `current_phase = "export"`.
+3. **Never assume completion from conversation history.** Always read `state.json` to verify current status before spawning the next agent.
+4. **State tracking is mandatory for every spawn**: Before spawn → mark `"running"`, increment `attempt`. After success → mark `"complete"`. After failure → mark `"failed"`, retry if `attempt < 3`.
 
 ## Minimum Review Rounds Policy
 **The pipeline MUST complete at least 2 full review→revision cycles before presenting results to the user at a checkpoint.** This applies to ALL writing and revision tasks, whether full-paper or scoped to specific sections. The rationale: Round 1 catches obvious issues; Round 2 stress-tests the fixes and catches second-order problems introduced by the revision. Only after Round 2 (or later) should the orchestrator pause for user feedback.

@@ -114,6 +114,11 @@ Before finalizing any section that describes the system's components/modules:
 3. **Verify component names** match the terminology used in the system section.
 4. **Use the user's positioning language** for the system (e.g., "collaborative tool", "digital twins"). Check `docs/user_input.md` for preferred framing.
 
+### For Academic Papers: Conceptual Precision Check (MANDATORY)
+Before finalizing any section, verify the following conceptual distinctions are maintained (see `writing_voice_hci.md` "Key Conceptual Distinctions" for full definitions):
+1. **Feature/UI design vs. Study design**: The artifact being evaluated (feature design, UI design, webpage design) is clearly distinguished from the research methodology (study design, usability testing design). Never conflate "improving the feature" with "improving the study design."
+2. **Digital twins vs. Autonomous agents**: If the paper involves LLM agents simulating humans, clearly distinguish digital twins (replicating human behavior/thinking with persona, harder) from autonomous task-oriented agents (completing tasks efficiently, no persona needed). Position the system correctly within this taxonomy.
+
 # Budget Discipline
 - Respect page limits defined in `project.yaml` and section specs.
 - Keep background concise and methods dense.
@@ -151,3 +156,44 @@ Do not log routine operations. The orchestrator collects these and routes to the
 - Implications connect directly to findings, not speculative claims.
 - Double-blind compliant: no author or institution identification.
 - **No forbidden sentence structures**: **No em-dashes (—) anywhere in generated prose.** This is an absolute ban covering ALL forms: paired parentheticals (`— phrase —`), single asides (`X — Y`), appositives (`X — an approach that`), and list introductions (`X — namely, Y`). Replace with commas, periods, colons, "which"/"that" clauses, or parentheses. Scan every draft for the literal character — (U+2014) before delivering. Also banned: **"is not to X but to Y" / "is not X but Y"** (defensive negation framing; state the positive purpose directly instead), trailing participial phrases (`, verb-ing xxx`), comma+gerund clauses (`, having xxx`). See `writing_voice.md` "Forbidden Sentence Structures" for the full rule with examples.
+
+### For Academic Papers: Post-Generation Scan (MANDATORY — run AFTER writing, BEFORE delivering)
+
+Scan every draft for ALL of the following. Fix violations before delivering.
+
+**Structural scans (from `writing_voice.md`):**
+1. Em-dashes (—) → rewrite with commas, periods, colons, or relative clauses
+2. Defensive negation ("is not to X but to Y" / "rather than") → state positive purpose directly
+3. Trailing participials (", verb-ing xxx") → split into separate sentences
+4. Comma+gerund (", having xxx") → restructure
+5. Absolute words ("must" outside formal specs, "absolutely", "certainly") → soften
+6. Categorical claims ("No existing system...", "All prior work...") → qualify with "Many" / "Most" / "Few"
+7. **Explicit negation contrasts ("not X" emphasis)** → replace with positive "both...and" or just describe what IS provided. Banned: "not just task-completion logs", "not sandboxed simulations"
+8. **Formulaic summary sentences** → delete sentences like "Most existing systems satisfy one of these requirements but not both" or "Together, these limitations highlight..."
+9. **Meta-commentary sentences** → delete "This framing motivates...", "These findings suggest that X are best suited as..." and jump directly to the approach/finding
+10. **Overly abstract language** → replace with plain, direct statements
+
+**Style scans (from `writing_voice_hci.md` PI Copy-Edit Derived Patterns):**
+11. **Paired adjectives**: two adjectives modifying the same noun must use "and", not comma ("scalable and low-cost", not "scalable, low-cost")
+12. **Parenthetical example count**: max 2 items after "such as" / "e.g.," — if more than 2, cut to the 2 most illustrative
+13. **Researcher-agency**: every sentence describing system behavior in Introduction must show the researcher's role. If system is the sole subject performing an action, add researcher direction clause ("following researcher's configuration...")
+14. **Body-of-work subject**: literature-survey paragraphs must open with "Recent works on X" as subject, not "X offers/enables"
+15. **Structural gap framing**: "researchers lack a method" over "researchers rarely do X"
+16. **Dual-evaluation naming**: if study has two evaluation targets, name both explicitly
+17. **Practice-lens rationale**: design decisions must cite disciplinary norms, not computational convenience
+18. **Practice analogues**: connect unfamiliar data types to their established equivalents
+19. **Capabilities over limitations**: describe what participants CAN do, not what would be "prohibitively time-consuming"
+20. **Concession-first results**: results preview paragraph must lead with limitations, then "Despite this..." positive findings
+21. **Minimize intro tech detail**: component descriptions use "what it does", not "how it works"
+
+**Formatting scans (from `writing_voice_hci.md` Markdown Formatting Conventions):**
+22. **Bold component names**: scan the system description paragraph for component names (e.g., Persona Generator, Universal Browser Connector, Result Viewer Interface). Each component name MUST be bolded on first mention: **Persona Generator**. If any component name appears without bold formatting, add it.
+23. **Italic type categories**: scan for type taxonomy introductions (e.g., "two distinct uses: X and Y" or "two types: X and Y"). Category/type labels MUST be italicized: *LLM-based autonomous agents*, *digital twins of human participants*. If category labels appear without italics, add them.
+24. **'UX researchers' specificity**: scan for generic "researchers" used to describe the system's target users. Replace with "UX researchers" (or the domain-appropriate role from `project.yaml`). Generic "researchers" is only acceptable when referring to the broader research community, not the system's users.
+25. **Contribution phrasing**: verify the contribution list is introduced with "We make the following contributions:" (preferred). If "Our primary contributions are:" or "Our contributions include:" is used, replace with the preferred phrasing.
+26. **Tense consistency**: verify present tense for own system/contributions ("we present", "we design"), past tense for cited prior work ("found", "showed"), past tense for specific study procedures ("we evaluated", "we collected"), and present tense for ongoing gaps/truths ("remains", "rely on").
+
+**Content preservation scans (when editing an existing draft):**
+27. **Citation placeholders preserved**: verify that all citation markers from the source draft (including placeholders like `[NEW-XXX]`, `[cite]`) are preserved in the output. Do not silently drop citations.
+28. **Contextual details preserved**: verify that specific examples and contextual phrases from the source (e.g., "in a hospital", "on e-commerce platforms") are preserved unless they violate a writing rule. The parenthetical max-2 rule applies to "(e.g., X, Y, Z)" constructions only, not to descriptive phrases in the main clause.
+29. **System name formatting**: verify the system name is NOT bolded in running prose paragraphs (only bold in the contribution list as a lead item). Component names within the system description paragraph SHOULD be bolded.
